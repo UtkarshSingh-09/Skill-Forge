@@ -52,22 +52,22 @@ export function HomePage() {
             style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
             onPress={() => router.push('/learn')}
             accessibilityRole="button"
-            accessibilityLabel="Want to Learn New Circuit"
+            accessibilityLabel="Want to Learn New Circuit - Browse 26 Simulation Labs"
           >
             <View style={styles.cardHeader}>
               <View style={styles.iconContainer}>
                 <Ionicons name="school-outline" size={24} color={theme.color.pass} />
               </View>
-              <Text style={styles.tag}>CIRCUIT SIMULATOR</Text>
+              <Text style={styles.tag}>26 VIRTUAL LABS</Text>
             </View>
 
-            <Text style={styles.cardTitle}>Interactive Simulator</Text>
+            <Text style={styles.cardTitle}>Want to Learn New!</Text>
             <Text style={styles.cardDesc}>
-              Step into interactive virtual breadboard simulations, test Arduino firmware, and ask questions to your Socratic tutor.
+              Explore 26 interactive breadboard simulation labs, test Arduino firmware, and get step-by-step guidance from your Socratic AI tutor.
             </Text>
 
             <View style={styles.cardFooter}>
-              <Text style={styles.cardFooterText}>Open Simulator</Text>
+              <Text style={styles.cardFooterText}>Browse 26 Simulations</Text>
               <Ionicons name="arrow-forward" size={16} color={theme.color.text} />
             </View>
           </Pressable>

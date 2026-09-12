@@ -26,6 +26,7 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      background: radial-gradient(circle at 50% 45%, #161e2e 0%, #0a0d14 100%);
     }
 
     #workbench {
@@ -36,14 +37,80 @@
       flex-shrink: 0;
     }
 
-    #uno {
+    /* Anti-static ESD Electronic Lab Mat */
+    #workbench::before {
+      content: '';
       position: absolute;
-      left: 20px;
-      top: 60px;
-      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+      left: 0;
+      top: 10px;
+      width: 980px;
+      height: 400px;
+      background: #0f1520;
+      border-radius: 16px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      background-image:
+        radial-gradient(rgba(56, 189, 248, 0.1) 1.2px, transparent 0);
+      background-size: 24px 24px;
+      background-position: -12px -12px;
+      z-index: 0;
+    }
+
+    .workbench-header {
+      position: absolute;
+      top: 24px;
+      left: 28px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .wb-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 10px #22c55e, 0 0 4px #22c55e;
+      animation: wb-pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes wb-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
+    }
+
+    .wb-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: #94A3B8;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', Consolas, monospace;
+    }
+
+    .wb-bench-grid {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: rgba(56, 189, 248, 0.5);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', Consolas, monospace;
+      z-index: 2;
+    }
+
+    #uno {
+      display: block;
+      position: absolute;
+      left: 24px;
+      top: 64px;
+      filter: drop-shadow(0 10px 24px rgba(0,0,0,0.65));
+      z-index: 10;
     }
 
     #board {
+      display: block;
       position: absolute;
       left: 410px;
       top: 45px;
@@ -150,6 +217,13 @@
 <body>
   <div id="viewport">
     <div id="workbench">
+      <!-- ESD Workbench Header -->
+      <div class="workbench-header">
+        <div class="wb-dot"></div>
+        <div class="wb-label">SKILLFORGE LAB RIG · ARDUINO UNO R3</div>
+      </div>
+      <div class="wb-bench-grid">LAB DESK #01 · CALIBRATED</div>
+
       <!-- Arduino Uno -->
       <wokwi-arduino-uno id="uno"></wokwi-arduino-uno>
 
@@ -269,6 +343,20 @@
   <script>
     var runner = null;
 
+    window.onerror = function (msg, url, line, col, err) {
+      postToRN({
+        type: 'ERROR',
+        message: 'sim WebView JS error: ' + msg + ' (' + line + ':' + col + ')'
+      });
+    };
+
+    function updateUnoPower(on) {
+      var unoEl = document.getElementById('uno');
+      if (unoEl) {
+        unoEl.ledPower = !!on;
+      }
+    }
+
     // Auto-scale workbench to fit container cleanly
     function autoScale() {
       var vp = document.getElementById('viewport');
@@ -276,14 +364,20 @@
       if (!vp || !wb) return;
       var w = vp.clientWidth || window.innerWidth || document.documentElement.clientWidth || 360;
       var h = vp.clientHeight || window.innerHeight || document.documentElement.clientHeight || 240;
-      var scale = Math.min(w / 990, h / 430);
-      if (scale <= 0) scale = 0.35;
+      var scale = Math.min((w - 12) / 980, (h - 12) / 420);
+      if (scale <= 0) scale = 0.36;
       wb.style.transform = 'scale(' + scale + ')';
     }
     window.addEventListener('resize', autoScale);
     window.addEventListener('orientationchange', autoScale);
-    window.addEventListener('DOMContentLoaded', autoScale);
-    window.addEventListener('load', autoScale);
+    window.addEventListener('DOMContentLoaded', function() {
+      autoScale();
+      updateUnoPower(true);
+    });
+    window.addEventListener('load', function() {
+      autoScale();
+      updateUnoPower(true);
+    });
     autoScale();
     setTimeout(autoScale, 50);
     setTimeout(autoScale, 200);
@@ -354,6 +448,7 @@
           configureSim(msg.simId);
           setLed1State(false);
           setLed2State(false);
+          updateUnoPower(true);
 
           var hexText = atob(msg.hexBase64);
           if (runner) runner.stop();
@@ -374,6 +469,9 @@
             var is12On = !!(value & (1 << 4));
 
             setLed2State(is8On || is12On);
+            var unoEl = document.getElementById('uno');
+            if (unoEl) unoEl.led13 = is13On;
+
             postToRN({ type: 'LED_STATE', pin: 8, on: is8On, timestamp: Date.now() });
             postToRN({ type: 'LED_STATE', pin: 13, on: is13On, timestamp: Date.now() });
             postToRN({ type: 'LED_STATE', pin: 12, on: is12On, timestamp: Date.now() });
@@ -382,6 +480,7 @@
           postToRN({ type: 'ERROR', message: 'Failed to load hex: ' + (e && e.message) });
         }
       } else if (msg.type === 'RUN') {
+        updateUnoPower(true);
         if (runner) runner.execute();
       } else if (msg.type === 'STOP') {
         if (runner) runner.stop();
@@ -392,6 +491,7 @@
     window.addEventListener('message', function (e) { handleRNMessage(e.data); });
 
     postToRN({ type: 'READY' });
+    updateUnoPower(true);
 
     // Auto-demo support for browser testing (e.g. ?demo=1 or standalone)
     var urlParams = new URLSearchParams(window.location.search);

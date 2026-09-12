@@ -1,5 +1,5 @@
-import { LearnPage } from '../src/ui/pages/LearnPage';
+import { SimulationCatalogPage } from '../src/ui/pages/SimulationCatalogPage';
 
 export default function LearnRoute() {
-  return <LearnPage />;
+  return <SimulationCatalogPage />;
 }

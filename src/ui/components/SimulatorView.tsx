@@ -216,8 +216,13 @@ export function SimulatorView({
       <View style={styles.graphicContainer}>
         <WebRenderer
           ref={webviewRef}
-          source={{ html: SIMULATOR_HTML, baseUrl: '' }}
+          source={{ html: SIMULATOR_HTML, baseUrl: 'https://skillforge.local' }}
           onMessage={handleMessage}
+          onError={(syntheticEvent: any) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn('Simulator WebView load error:', nativeEvent);
+            onError?.(nativeEvent.description || 'WebView load error');
+          }}
           originWhitelist={['*']}
           javaScriptEnabled
           domStorageEnabled

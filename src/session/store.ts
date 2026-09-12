@@ -15,6 +15,7 @@ import { ExperimentRow } from './experimentCatalog';
 import { createLearningNodeFromEvents } from '../engine/learningGraph';
 import { updateLearningGraph, getLearningHistory } from './skillProfile';
 import { caps } from '../capabilities';
+import { captureVisionObservation } from '../perception/visionBus';
 import {
   InteractionState as FlowInteractionState,
   InteractionEvent,
@@ -181,7 +182,19 @@ export const useStore = create<AppState>((set, get) => ({
       let result;
       const engine = new ProcedureEngine(currentProcedure, state.stepIndex);
 
-      if (hardwareActive && hardwareData) {
+      // PRIORITY 1: Real on-device camera vision (Master Plan §4.1 / Gate B3).
+      // Arms a one-shot capture; the CameraView frame processor runs the TFLite
+      // models and publishes an ObservationState. Falls through on timeout/no board.
+      let visionObs = null;
+      if (caps.mlDetector) {
+        visionObs = await captureVisionObservation();
+      }
+
+      if (visionObs && visionObs.boardDetected) {
+        // VISION MODE: the deterministic engine judges the detected topology.
+        obs = visionObs;
+        result = engine.evaluate(obs);
+      } else if (hardwareActive && hardwareData) {
         // DYNAMIC HARDWARE MODE: Real circuit continuity dictates verdict
         const isPhysicalPass = Boolean(hardwareData.ledOn);
         obs = getMockObservation(isPhysicalPass ? 'correct' : 'wrong', currentProcedure, state.stepIndex);

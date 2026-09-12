@@ -5,6 +5,9 @@ import { CameraView as ExpoCameraView, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons';
 import { BreadboardGraphic } from './BreadboardGraphic';
 import { theme } from '../theme';
+import { useVisionFrameProcessor } from '../../perception/frameProcessor';
+import { loadModels } from '../../perception/modelRegistry';
+import { useStore } from '../../session/store';
 
 // Safely attempt to import react-native-vision-camera if available in standalone binary
 let VisionCameraComponent: any = null;
@@ -24,6 +27,8 @@ interface CameraViewProps {
   onLayout?: (e: LayoutChangeEvent) => void;
   fixtureMode?: boolean;
   showModeToggle?: boolean;
+  /** When true, mounts the ML frame processor + loads the TFLite models (Analyse page). */
+  enableDetection?: boolean;
 }
 
 export function CameraView({
@@ -31,8 +36,23 @@ export function CameraView({
   onLayout,
   fixtureMode: initialFixtureMode = false,
   showModeToggle = false,
+  enableDetection = false,
 }: CameraViewProps) {
   const pathname = usePathname();
+
+  // ML wiring (Master Plan §4.1). Hooks are called unconditionally; the
+  // frame processor is only attached to the camera when enableDetection is on.
+  const visionFrameProcessor = useVisionFrameProcessor();
+  const setSensorState = useStore((s) => s.actions.setSensorState);
+  const device = useCameraDeviceHook ? useCameraDeviceHook('back') : null;
+
+  React.useEffect(() => {
+    if (!enableDetection) return;
+    // Kick off model load once (idempotent; flips caps.mlDetector on success).
+    void loadModels();
+    setSensorState('camera', true);
+    return () => setSensorState('camera', false);
+  }, [enableDetection, setSensorState]);
   const isCameraScreen =
     pathname.includes('coach') ||
     pathname.includes('analyse') ||
@@ -110,11 +130,12 @@ export function CameraView({
   // Live Camera Render
   return (
     <View style={styles.container} onLayout={handleLayout}>
-      {VisionCameraComponent && useCameraDeviceHook ? (
+      {VisionCameraComponent && device ? (
         <VisionCameraComponent
           style={StyleSheet.absoluteFill}
           isActive={isActive && isFocused}
-          device={useCameraDeviceHook('back')}
+          device={device}
+          frameProcessor={enableDetection ? visionFrameProcessor : undefined}
         />
       ) : (
         <ExpoCameraView

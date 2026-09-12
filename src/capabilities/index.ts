@@ -5,9 +5,10 @@ export const caps = {
   stt: false,
   overlay: true,
   xray: true,
-  // Lane B (Master Plan §4.1): true once board_pose.tflite + components.tflite
-  // are delivered by Lane C and react-native-fast-tflite is linked natively.
-  // Until then usePerception() stays on MockPerception fixtures.
+  // Lane B (Master Plan §4.1): flipped to true at runtime by
+  // modelRegistry.loadModels() once board_pose.tflite + components.tflite load
+  // successfully via react-native-fast-tflite (needs an EAS dev build). Until
+  // then it stays false and requestTest falls back to hardware / MockPerception.
   mlDetector: false
 };
 

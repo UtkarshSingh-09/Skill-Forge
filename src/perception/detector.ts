@@ -4,14 +4,24 @@
  * board_pose.tflite + components.tflite model output into the frozen
  * ObservationState contract that ProcedureEngine.evaluate() already consumes.
  *
- * This module is model-agnostic: it takes already-decoded keypoints/boxes
- * (whatever shape react-native-fast-tflite hands back after NMS), not raw
- * tensors. Wiring the actual .tflite inference call is Gate B1's remaining
- * step once Lane C delivers board_pose.tflite + components.tflite — see
- * runDetectorFromModels() below, which is currently a documented stub.
+ * Two entry points:
+ *  - runDetector(): pure function over already-decoded keypoints (unit-testable).
+ *  - runDetectorFromModels(): runs the real board_pose + components TFLite models
+ *    (via modelRegistry) on a preprocessed input tensor, decodes them (yoloDecode),
+ *    and returns an ObservationState. Never throws; falls back to board-not-found.
  */
 import { ObservationState, DetectedComponent, DetectedConnection, ComponentOrientation } from '../contract/types';
 import { BoardCorners, ImagePoint, buildHoleGrid, snapToNearestHole } from './grid';
+import { decodePose, DecodedDetection } from './yoloDecode';
+import { runBoardPose, runComponents, modelsReady } from './modelRegistry';
+
+/** Model geometry (matches assets/models/labelmap.json + components_labelmap.json). */
+const INPUT_SIZE = 640;
+const BOARD_KEYPOINTS = 6;
+const BOARD_CLASSES = 1;
+const COMPONENT_KEYPOINTS = 2;
+const COMPONENT_CLASSES = 4;
+const COMPONENT_CLASS_NAMES: ComponentClass[] = ['led', 'resistor', 'wire', 'arduino_header'];
 
 /** Confidence Threshold Law (D8, carried over from the existing engine docs). */
 export const MIN_COMPONENT_CONFIDENCE = 0.75;
@@ -165,18 +175,110 @@ export function runDetector(input: DetectorInput): ObservationState {
 }
 
 /**
- * NOT YET WIRED — blocked on Lane C delivering board_pose.tflite +
- * components.tflite (Master Plan §1.3 / Gate C4). Once those files exist
- * under assets/models/, this loads them via react-native-fast-tflite,
- * runs them on a captured frame, decodes the raw tensor output into
- * RawBoardPose + RawComponentDetection[], and calls runDetector() above.
- * Left as a documented stub rather than faked, per Law 2 (false PASS is
- * worse than false FAIL) — usePerception() must keep using MockPerception
- * until this is real.
+ * Assembles a RawBoardPose from the single best board-pose detection.
+ * Keypoint order (labelmap.json): 0=topLeft 1=topRight 2=bottomLeft
+ * 3=bottomRight 4=dividerLeft 5=dividerRight.
  */
-export async function runDetectorFromModels(_frame: unknown): Promise<ObservationState> {
-  throw new Error(
-    'runDetectorFromModels: board_pose.tflite / components.tflite not yet delivered by Lane C. ' +
-      'Use runDetector() directly with decoded keypoints, or MockPerception via usePerception().'
-  );
+function boardFromDetection(det: DecodedDetection | undefined): RawBoardPose {
+  if (!det || det.keypoints.length < 4) {
+    return { corners: null, confidence: det?.score ?? 0 };
+  }
+  const kp = det.keypoints;
+  const corners: BoardCorners = {
+    topLeft: { x: kp[0].x, y: kp[0].y },
+    topRight: { x: kp[1].x, y: kp[1].y },
+    bottomLeft: { x: kp[2].x, y: kp[2].y },
+    bottomRight: { x: kp[3].x, y: kp[3].y },
+  };
+  return {
+    corners,
+    dividerLeft: kp[4] ? { x: kp[4].x, y: kp[4].y } : undefined,
+    dividerRight: kp[5] ? { x: kp[5].x, y: kp[5].y } : undefined,
+    confidence: det.score,
+  };
+}
+
+/** Maps decoded component detections to the detector's RawComponentDetection shape. */
+function componentsFromDetections(dets: DecodedDetection[]): RawComponentDetection[] {
+  const out: RawComponentDetection[] = [];
+  for (const d of dets) {
+    const cls = COMPONENT_CLASS_NAMES[d.classId];
+    if (!cls || d.keypoints.length < 2) continue;
+    out.push({
+      class: cls,
+      keypoints: [
+        { x: d.keypoints[0].x, y: d.keypoints[0].y },
+        { x: d.keypoints[1].x, y: d.keypoints[1].y },
+      ],
+      confidence: d.score,
+      // Keypoint 0 is the first leg; LED anode/cathode ordering is resolved
+      // geometrically in ledOrientation(). We keep pin1 as keypoint 0.
+      anodeIsKeypoint0: true,
+    });
+  }
+  return out;
+}
+
+/**
+ * REAL on-device pipeline (Master Plan §4.1). Takes a preprocessed input tensor
+ * (a [1,640,640,3] float array produced by the vision-camera resize plugin),
+ * runs board_pose.tflite + components.tflite via the model registry, decodes the
+ * YOLOv8-pose outputs, and returns an ObservationState via the pure runDetector().
+ *
+ * Never throws: if models are not ready or inference fails, it returns a
+ * board-not-found ObservationState (→ UNCERTAIN downstream), and the caller
+ * falls back to MockPerception / hardware. Law 2 + Law 4.
+ */
+export async function runDetectorFromModels(
+  input: ArrayLike<number>,
+  meta?: { handsClear?: boolean; sceneStable?: boolean; timestamp?: number }
+): Promise<ObservationState> {
+  const handsClear = meta?.handsClear ?? true;
+  const sceneStable = meta?.sceneStable ?? true;
+  const timestamp = meta?.timestamp ?? Date.now();
+
+  const notFound: ObservationState = {
+    timestamp,
+    timestampMs: timestamp,
+    boardDetected: false,
+    handsClear,
+    sceneStable,
+    overallConfidence: 0,
+    components: [],
+    connections: [],
+  };
+
+  if (!modelsReady()) return notFound;
+
+  const boardOut = runBoardPose(input);
+  if (!boardOut) return notFound;
+
+  const boardDets = decodePose(boardOut.data, boardOut.dims, {
+    numClasses: BOARD_CLASSES,
+    numKeypoints: BOARD_KEYPOINTS,
+    inputSize: INPUT_SIZE,
+    confThreshold: MIN_BOARD_CONFIDENCE,
+    dequant: boardOut.dequant,
+  });
+  const board = boardFromDetection(boardDets.sort((a, b) => b.score - a.score)[0]);
+  if (!board.corners) return notFound;
+
+  const compOut = runComponents(input);
+  const componentDets = compOut
+    ? decodePose(compOut.data, compOut.dims, {
+        numClasses: COMPONENT_CLASSES,
+        numKeypoints: COMPONENT_KEYPOINTS,
+        inputSize: INPUT_SIZE,
+        confThreshold: MIN_COMPONENT_CONFIDENCE,
+        dequant: compOut.dequant,
+      })
+    : [];
+
+  return runDetector({
+    board,
+    components: componentsFromDetections(componentDets),
+    handsClear,
+    sceneStable,
+    timestamp,
+  });
 }

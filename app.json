@@ -2,6 +2,7 @@
   "expo": {
     "name": "SkillForge",
     "slug": "skillforge",
+    "owner": "devrajsahani021",
     "scheme": "skillforge",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,7 +13,10 @@
     },
     "android": {
       "package": "com.skillforge.app",
-      "permissions": ["CAMERA", "RECORD_AUDIO"],
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,8 +29,21 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      ["expo-build-properties", { "android": { "newArchEnabled": true } }],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true
+          }
+        }
+      ],
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "351474c9-45e6-4439-a8fb-fa8c32281d51"
+      }
+    }
   }
 }

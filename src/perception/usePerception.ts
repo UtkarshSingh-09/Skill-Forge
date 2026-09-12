@@ -3,7 +3,7 @@ import { ObservationState } from '../contract/types';
 import { useStore } from '../session/store';
 import { MOCK } from '../ui/dev/MockPerception';
 import { caps } from '../capabilities';
-import { runDetectorFromModels } from './detector';
+import { captureVisionObservation } from './visionBus';
 
 /**
  * Perception hook feeding ObservationState to the session store.
@@ -37,10 +37,16 @@ export function usePerception(onState?: (obs: ObservationState) => void) {
       const key = selectedFixture === 'live' ? 'correct' : selectedFixture;
       return MOCK[key] || MOCK.correct;
     },
-    /** TEST-press entry point once the real ML pipeline is wired (Gate B1/B3). */
-    captureAndDetect: async (frame?: unknown): Promise<ObservationState> => {
+    /**
+     * TEST-press entry point (Gate B3). When the ML detector is live, arms a
+     * one-shot camera capture via the vision bus (the CameraView frame processor
+     * runs the models and publishes the result). Falls back to MockPerception on
+     * timeout / no board / detector off. Law 4.
+     */
+    captureAndDetect: async (): Promise<ObservationState> => {
       if (caps.mlDetector) {
-        return runDetectorFromModels(frame);
+        const visionObs = await captureVisionObservation();
+        if (visionObs && visionObs.boardDetected) return visionObs;
       }
       const key = selectedFixture === 'live' ? 'correct' : selectedFixture;
       return MOCK[key] || MOCK.correct;

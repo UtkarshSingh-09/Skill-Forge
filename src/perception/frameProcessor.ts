@@ -1,59 +1,103 @@
-import { useFrameOutput } from 'react-native-vision-camera';
-import type { Frame } from 'react-native-vision-camera';
-import { OpenCV } from 'react-native-fast-opencv';
-import { useRunOnJS } from 'react-native-worklets-core';
-import { ObservationState, Cell } from '../contract/types';
-import calibration from '../ui/overlay/boardCalibration.json';
+/**
+ * Camera frame → ObservationState wiring (Master Plan §4.1, Gate B3).
+ *
+ * Two halves:
+ *  1. processResizedInput()  — JS-thread, pure-ish, testable: takes a preprocessed
+ *     [1,640,640,3] float tensor, runs the real detector, publishes to the vision bus.
+ *  2. useVisionFrameProcessor() — the native glue: a vision-camera frame processor
+ *     that, ONLY when a capture is armed (TEST-press), resizes the frame to a 640
+ *     RGB float tensor and hands it to processResizedInput via runOnJS.
+ *
+ * Every native touchpoint is guarded. If react-native-vision-camera,
+ * vision-camera-resize-plugin, or react-native-worklets-core are not linked
+ * (Expo Go / web / pre-EAS-build), useVisionFrameProcessor() returns undefined
+ * and the app keeps working on MockPerception. Law 4.
+ */
+import { ObservationState } from '../contract/types';
+import { runDetectorFromModels } from './detector';
+import { publishObservation, isCaptureRequested } from './visionBus';
+
+export const INPUT_SIZE = 640;
 
 /**
- * Ankit's OpenCV Frame Processor Pipeline
- * Specification: Part 10 of SkillForge Master Plan
- *
- * Steps:
- * 1. Downscale frame to ~960x720 (speed + memory)
- * 2. Grayscale -> GaussianBlur -> adaptiveThreshold
- * 3. findContours -> approxPolyDP -> keep 4 corner fiducials
- * 4. getPerspectiveTransform(imagePts, boardPts) -> Homography matrix H
- * 5. Sample holes for the active step (mean HSV patch 7x7)
- * 6. Classify component presence & polarity
- * 7. Emit ObservationState via runOnJS
+ * JS-thread entry point. Runs the models on a resized input tensor and publishes
+ * the result to the vision bus. Never throws.
  */
-
-export interface FrameProcessorConfig {
-  activeStepCells?: Cell[];
-  onObservation: (obs: ObservationState) => void;
+export async function processResizedInput(
+  input: ArrayLike<number>,
+  meta?: { handsClear?: boolean; sceneStable?: boolean; timestamp?: number }
+): Promise<ObservationState | null> {
+  try {
+    const obs = await runDetectorFromModels(input, meta);
+    publishObservation(obs);
+    return obs;
+  } catch {
+    return null;
+  }
 }
 
-export function useBreadboardPerception({ activeStepCells = [], onObservation }: FrameProcessorConfig) {
-  const emitState = useRunOnJS(onObservation, [onObservation]);
+// --- Native module resolution (guarded) -----------------------------------
+let useFrameProcessorHook: any = null;
+let useResizePluginHook: any = null;
+let useRunOnJSHook: any = null;
 
-  const frameOutput = useFrameOutput({
-    pixelFormat: 'yuv', // OpenCV natively supports YUV efficiently
-    onFrame(frame: Frame) {
+try {
+  useFrameProcessorHook = require('react-native-vision-camera').useFrameProcessor;
+} catch {
+  useFrameProcessorHook = null;
+}
+try {
+  useResizePluginHook = require('vision-camera-resize-plugin').useResizePlugin;
+} catch {
+  useResizePluginHook = null;
+}
+try {
+  useRunOnJSHook = require('react-native-worklets-core').useRunOnJS;
+} catch {
+  useRunOnJSHook = null;
+}
+
+export function visionFrameProcessorAvailable(): boolean {
+  return !!useFrameProcessorHook && !!useResizePluginHook && !!useRunOnJSHook;
+}
+
+/**
+ * Returns a vision-camera frameProcessor (or undefined when unavailable).
+ * The processor is cheap on idle frames — it only resizes + infers when a
+ * capture has been armed via visionBus.captureVisionObservation().
+ *
+ * Must be called unconditionally by a component (React hook rules); when native
+ * modules are missing it still returns undefined safely.
+ */
+export function useVisionFrameProcessor(): any {
+  if (!visionFrameProcessorAvailable()) {
+    return undefined;
+  }
+
+  const { resize } = useResizePluginHook();
+  // Bridge worklet → JS thread. processResizedInput is async; runOnJS fire-and-forget.
+  const onInput = useRunOnJSHook(
+    (input: Float32Array) => {
+      void processResizedInput(input, { handsClear: true, sceneStable: true });
+    },
+    []
+  );
+
+  return useFrameProcessorHook(
+    (frame: any) => {
       'worklet';
       try {
-        if (!frame || frame.width === 0 || frame.height === 0) {
-          frame.dispose();
-          return;
-        }
-
-        // TODO (Ankit): Connect Fast-OpenCV pipeline here:
-        // const srcMat = OpenCV.frameToMat(frame);
-        // const grayMat = OpenCV.cvtColor(srcMat, ColorConversionCodes.COLOR_RGBA2GRAY);
-        // const blurred = OpenCV.gaussianBlur(grayMat, { width: 5, height: 5 }, 0);
-        // const thresh = OpenCV.adaptiveThreshold(blurred, 255, AdaptiveThresholdTypes.ADAPTIVE_THRESH_GAUSSIAN_C, ThresholdTypes.THRESH_BINARY_INV, 11, 2);
-        
-        // CRITICAL MEMORY LAW (Master Plan 10.2):
-        // Always free native C++ buffers every frame to avoid out-of-memory crashes!
-        // OpenCV.clearBuffers();
-
-      } catch (err) {
-        // Degrade gracefully if frame worklet fails
-      } finally {
-        frame.dispose();
+        if (!isCaptureRequested()) return;
+        const resized = resize(frame, {
+          scale: { width: INPUT_SIZE, height: INPUT_SIZE },
+          pixelFormat: 'rgb',
+          dataType: 'float32',
+        });
+        onInput(resized);
+      } catch {
+        // Never let a frame worklet crash the camera.
       }
     },
-  });
-
-  return { frameOutput };
+    [resize, onInput]
+  );
 }

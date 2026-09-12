@@ -153,8 +153,8 @@ export function AnalysePage() {
           }
         }}
       >
-        {/* Live Camera Feed */}
-        <CameraView isActive={true} fixtureMode={false} />
+        {/* Live Camera Feed + on-device ML detection pipeline (Master Plan §4.1) */}
+        <CameraView isActive={true} fixtureMode={false} enableDetection={true} />
 
         {/* Skia High-Contrast AR Pin Overlay */}
         <BoardOverlay

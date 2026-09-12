@@ -187,4 +187,15 @@ describe('ProcedureEngine — 10 Golden Acceptance Tests (Part 11.1)', () => {
       assert.strictEqual(res.result, 'PASS', `Step ${i + 1} (${procedure.steps[i].expect.type}) failed: ${res.reason}`);
     }
   });
+
+  // 12. Procedure P-B (7408 AND Gate) multi-step evaluation
+  it('12. Procedure P-B (7408 AND Gate) evaluates all steps to PASS with obs_correct', () => {
+    const andProc = require('../../contract/procedures/and_gate_procedure.json');
+    const fullObs = require('../../contract/fixtures/obs_correct.json');
+    for (let i = 0; i < andProc.steps.length; i++) {
+      const stepEngine = new ProcedureEngine(andProc, i);
+      const res = stepEngine.evaluate(fullObs);
+      assert.strictEqual(res.result, 'PASS', `Step ${i + 1} (${andProc.steps[i].expect.type}) failed: ${res.reason}`);
+    }
+  });
 });

@@ -1,6 +1,9 @@
 {
   "procedureId": "P-LED",
   "title": "Light an LED",
+  "description": "Basic breadboard circuit with current-limiting resistor and LED",
+  "difficulty": "Beginner",
+  "estimatedTimeMinutes": 3,
   "steps": [
     {
       "id": 1,

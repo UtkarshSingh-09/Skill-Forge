@@ -1,0 +1,34 @@
+{
+  "model": "board_pose",
+  "version": "1.0.0",
+  "architecture": "yolov8n-pose",
+  "input_resolution": [640, 640],
+  "format": "tflite_int8",
+  "classes": [
+    {
+      "id": 0,
+      "name": "breadboard",
+      "keypoints": [
+        { "id": 0, "name": "topLeft", "description": "Top-left outer corner of breadboard body" },
+        { "id": 1, "name": "topRight", "description": "Top-right outer corner of breadboard body" },
+        { "id": 2, "name": "bottomLeft", "description": "Bottom-left outer corner of breadboard body" },
+        { "id": 3, "name": "bottomRight", "description": "Bottom-right outer corner of breadboard body" },
+        { "id": 4, "name": "dividerLeft", "description": "Left end of center divider channel (between rows E & F)" },
+        { "id": 5, "name": "dividerRight", "description": "Right end of center divider channel (between rows E & F)" }
+      ]
+    }
+  ],
+  "homography": {
+    "referenceHoles": {
+      "topLeftHole": "A1",
+      "topRightHole": "A30",
+      "bottomLeftHole": "J1",
+      "bottomRightHole": "J30"
+    },
+    "grid": {
+      "rows": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+      "cols": 30,
+      "pitchMm": 2.54
+    }
+  }
+}

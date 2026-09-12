@@ -43,3 +43,10 @@ yarn-error.*
 # Python
 __pycache__/
 *.pyc
+
+# ML Raw Datasets, Videos & Frame Dumps (>100MB / large binaries)
+videos/
+perception/training/frames/
+perception/training/dataset/
+perception/training/*.zip
+

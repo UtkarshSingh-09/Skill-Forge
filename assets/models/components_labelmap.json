@@ -1,0 +1,9 @@
+{
+  "model_name": "components",
+  "version": "1.0.0",
+  "classes": ["led", "resistor", "wire", "arduino_header"],
+  "keypoints": [
+    {"id": 0, "name": "pin1", "description": "First connection pin/leg"},
+    {"id": 1, "name": "pin2", "description": "Second connection pin/leg"}
+  ]
+}

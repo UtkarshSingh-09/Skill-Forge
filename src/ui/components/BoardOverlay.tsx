@@ -58,10 +58,10 @@ export function BoardOverlay({
               y={r.y}
               width={r.width}
               height={r.height}
-              r={4}
+              r={6}
               color={color}
               style="stroke"
-              strokeWidth={3}
+              strokeWidth={4}
             />
           ))}
         </Canvas>
@@ -82,14 +82,30 @@ export function BoardOverlay({
                   backgroundColor: `${color}20`,
                 },
               ]}
-            >
-              <View style={[styles.cellLabelBadge, { backgroundColor: color }]}>
-                <Text style={styles.cellLabelText}>{r.cell}</Text>
-              </View>
-            </View>
+            />
           ))}
         </View>
       )}
+
+      {/* Render the Badges on top ALWAYS so they are extremely visible */}
+      <View style={StyleSheet.absoluteFill}>
+        {rects.map((r) => (
+          <View
+            key={`badge-container-${r.cell}-${r.x}`}
+            style={{
+              position: 'absolute',
+              left: r.x + r.width / 2 - 100, // Center using a 200px wide container
+              top: r.y - 28, // Position above the bounding box
+              width: 200,
+              alignItems: 'center',
+            }}
+          >
+            <View style={[styles.cellLabelBadge, { backgroundColor: color }]}>
+              <Text style={styles.cellLabelText}>{r.cell}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -97,27 +113,30 @@ export function BoardOverlay({
 const styles = StyleSheet.create({
   highlightBox: {
     position: 'absolute',
-    borderWidth: 2.5,
-    borderRadius: 4,
+    borderWidth: 4,
+    borderRadius: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 4,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 6,
   },
   cellLabelBadge: {
-    position: 'absolute',
-    top: -14,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 3,
-    alignSelf: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.2)', // Ensure edge contrast
   },
   cellLabelText: {
-    color: '#0E1116',
-    fontSize: 9,
-    fontWeight: '800',
+    color: '#000000', // Black text is generally higher contrast on vivid highlight colors
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
 });

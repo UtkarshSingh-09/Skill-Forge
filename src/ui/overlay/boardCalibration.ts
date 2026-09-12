@@ -32,7 +32,7 @@ export function getCellRect(cell: Cell, containerWidth: number, containerHeight:
     const yRel = isPositive ? calibration.topRailPos : calibration.topRailNeg;
     const y = offsetY + yRel * scale;
 
-    const size = 18 * scale;
+    const size = 28 * scale;
     return {
       cell,
       x: x - size / 2,
@@ -73,7 +73,7 @@ export function getCellRect(cell: Cell, containerWidth: number, containerHeight:
   }
 
   const y = offsetY + yRel * scale;
-  const size = 18 * scale;
+  const size = 28 * scale;
 
   return {
     cell,

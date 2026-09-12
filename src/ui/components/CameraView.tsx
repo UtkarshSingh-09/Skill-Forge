@@ -33,13 +33,22 @@ export function CameraView({
   showModeToggle = false,
 }: CameraViewProps) {
   const pathname = usePathname();
-  const isFocused = pathname === '/coach' || pathname.includes('coach');
+  const isCameraScreen =
+    pathname.includes('coach') ||
+    pathname.includes('analyse') ||
+    pathname.includes('workbench') ||
+    pathname.includes('learn');
+  const isFocused = isCameraScreen || pathname === '/';
   const [permission, requestPermission] = useCameraPermissions();
   const [showVirtualBoard, setShowVirtualBoard] = useState<boolean>(initialFixtureMode);
   const [dimensions, setDimensions] = useState<{ width: number; height: number }>({
     width: 360,
     height: 300,
   });
+
+  React.useEffect(() => {
+    setShowVirtualBoard(initialFixtureMode);
+  }, [initialFixtureMode]);
 
   const handleLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;

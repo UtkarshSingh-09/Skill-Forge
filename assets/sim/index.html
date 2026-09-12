@@ -7284,6 +7284,11 @@ lit-html/directives/class-map.js:
     }
     window.addEventListener('resize', autoScale);
     window.addEventListener('orientationchange', autoScale);
+    if (window.ResizeObserver) {
+      try {
+        new ResizeObserver(autoScale).observe(document.body);
+      } catch(e) {}
+    }
     window.addEventListener('DOMContentLoaded', function() {
       autoScale();
       updateUnoPower(true);
@@ -7296,6 +7301,8 @@ lit-html/directives/class-map.js:
     setTimeout(autoScale, 50);
     setTimeout(autoScale, 200);
     setTimeout(autoScale, 600);
+    setTimeout(autoScale, 1200);
+    setTimeout(autoScale, 2400);
 
     function postToRN(message) {
       if (window.ReactNativeWebView) {

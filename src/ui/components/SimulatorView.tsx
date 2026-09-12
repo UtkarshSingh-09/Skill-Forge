@@ -216,7 +216,7 @@ export function SimulatorView({
       <View style={styles.graphicContainer}>
         <WebRenderer
           ref={webviewRef}
-          source={{ html: SIMULATOR_HTML, baseUrl: 'https://skillforge.local' }}
+          source={{ html: SIMULATOR_HTML }}
           onMessage={handleMessage}
           onError={(syntheticEvent: any) => {
             const { nativeEvent } = syntheticEvent;
@@ -230,6 +230,10 @@ export function SimulatorView({
           allowFileAccessFromFileURLs
           allowUniversalAccessFromFileURLs
           mixedContentMode="always"
+          scalesPageToFit={false}
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
           style={styles.webview}
         />
       </View>

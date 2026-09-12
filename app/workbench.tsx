@@ -27,11 +27,12 @@ export default function WorkbenchRoute() {
       <View style={styles.topNav}>
         <Pressable
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.replace('/learn')}
           accessibilityRole="button"
           accessibilityLabel="Back to All Labs"
         >
-          <Ionicons name="chevron-back" size={22} color={theme.color.text} />
+          <Ionicons name="chevron-back" size={20} color={theme.color.text} />
+          <Text style={styles.backButtonText}>26 Labs</Text>
         </Pressable>
 
         <View style={styles.navTitleContainer}>
@@ -105,7 +106,7 @@ export default function WorkbenchRoute() {
       ) : arModeActive ? (
         /* 3. AR Live Camera Overlay Mode */
         <View style={styles.arContainer}>
-          <CameraView isActive={true} fixtureMode={false} />
+          <CameraView isActive={true} fixtureMode={false} showModeToggle={true} />
           <BoardOverlay
             highlightCells={['E10', 'E14', 'E18']}
             color={theme.color.accent}
@@ -152,7 +153,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 6,
+    gap: 2,
+  },
+  backButtonText: {
+    color: theme.color.text,
+    fontSize: 12,
+    fontWeight: '700',
   },
   navTitleContainer: {
     flex: 1,

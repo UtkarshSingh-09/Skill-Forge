@@ -8,6 +8,7 @@ import {
 import defaultProcedure from '../contract/procedures/led_procedure.json';
 import { MOCK, MockFixtureKey } from '../ui/dev/MockPerception';
 import { ProcedureEngine } from '../engine/procedureEngine';
+import { persistEvent } from './events';
 
 export interface AppState {
   procedure: Procedure | null;
@@ -137,6 +138,7 @@ export const useStore = create<AppState>((set, get) => ({
       set((state) => ({
         events: [...state.events, e],
       }));
+      persistEvent(e);
     },
 
     setProcedure: (procedure: Procedure) => {

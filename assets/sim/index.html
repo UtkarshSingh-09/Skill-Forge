@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>SkillForge Simulator</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #0E1116;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #viewport {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #workbench {
+      position: relative;
+      width: 980px;
+      height: 420px;
+      transform-origin: center center;
+      flex-shrink: 0;
+    }
+
+    #uno {
+      position: absolute;
+      left: 20px;
+      top: 60px;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+    }
+
+    #board {
+      position: absolute;
+      left: 410px;
+      top: 45px;
+    }
+
+    #res1 {
+      position: absolute;
+      left: 578.5px;
+      top: 191px;
+      transform: scaleX(1.02);
+      transform-origin: left center;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+      z-index: 20;
+    }
+
+    #led {
+      position: absolute;
+      left: 663.5px;
+      top: 80px;
+      transform: scale(1.15);
+      transform-origin: center bottom;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+      z-index: 25;
+      transition: filter 0.08s ease-in-out;
+    }
+
+    #led.lit {
+      filter: drop-shadow(0 0 10px #ff2222)
+              drop-shadow(0 0 24px rgba(255, 0, 0, 0.95))
+              drop-shadow(0 0 45px rgba(255, 0, 0, 0.75))
+              drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+
+    #led2 {
+      position: absolute;
+      left: 723.5px;
+      top: 80px;
+      transform: scale(1.15);
+      transform-origin: center bottom;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+      z-index: 25;
+      display: none;
+      transition: filter 0.08s ease-in-out;
+    }
+
+    #led2.lit {
+      filter: drop-shadow(0 0 10px #22c55e)
+              drop-shadow(0 0 24px rgba(34, 197, 94, 0.95))
+              drop-shadow(0 0 45px rgba(34, 197, 94, 0.75))
+              drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+
+    #wires {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .wire-shadow {
+      fill: none;
+      stroke: rgba(0, 0, 0, 0.45);
+      stroke-width: 6.5px;
+      stroke-linecap: round;
+      filter: url(#wire-shadow-blur);
+    }
+
+    .wire {
+      fill: none;
+      stroke-width: 4.5px;
+      stroke-linecap: round;
+    }
+
+    .wire-yellow { stroke: #EAB308; }
+    .wire-black  { stroke: #181A1E; }
+    .wire-green  { stroke: #22C55E; }
+    .wire-red    { stroke: #EF4444; }
+
+    .led-lead-shadow {
+      fill: none;
+      stroke: rgba(0, 0, 0, 0.35);
+      stroke-width: 3.5px;
+      stroke-linecap: round;
+      filter: url(#wire-shadow-blur);
+    }
+
+    .led-lead {
+      fill: none;
+      stroke: #CBD5E1;
+      stroke-width: 2.5px;
+      stroke-linecap: round;
+    }
+
+    .terminal-yellow { fill: #EAB308; stroke: #713F12; stroke-width: 1.2px; }
+    .terminal-black  { fill: #181A1E; stroke: #64748B; stroke-width: 1.2px; }
+    .terminal-green  { fill: #22C55E; stroke: #14532D; stroke-width: 1.2px; }
+    .terminal-lead   { fill: #94A3B8; stroke: #334155; stroke-width: 1px; }
+  </style>
+  <script src="./bundle.js"></script>
+</head>
+<body>
+  <div id="viewport">
+    <div id="workbench">
+      <!-- Arduino Uno -->
+      <wokwi-arduino-uno id="uno"></wokwi-arduino-uno>
+
+      <!-- Solderless Breadboard -->
+      <wokwi-breadboard id="board"></wokwi-breadboard>
+
+      <!-- 1k Ohm Current Limiting Resistor across holes E10 and E14 -->
+      <wokwi-resistor id="res1" value="1000"></wokwi-resistor>
+
+      <!-- LEDs on Breadboard -->
+      <wokwi-led id="led" color="red"></wokwi-led>
+      <wokwi-led id="led2" color="green"></wokwi-led>
+
+      <!-- Wiring Harness and Dynamic Radiant Glow Blooms -->
+      <svg id="wires" viewBox="0 0 980 420">
+        <defs>
+          <filter id="wire-shadow-blur" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2.5" />
+          </filter>
+          <filter id="bloom-blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="8" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          <!-- Red LED Radiant Bloom -->
+          <radialGradient id="bloom-red-grad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1" />
+            <stop offset="18%" stop-color="#FF5555" stop-opacity="0.95" />
+            <stop offset="40%" stop-color="#FF1111" stop-opacity="0.8" />
+            <stop offset="70%" stop-color="#DC2626" stop-opacity="0.35" />
+            <stop offset="100%" stop-color="#DC2626" stop-opacity="0" />
+          </radialGradient>
+
+          <!-- Green LED Radiant Bloom -->
+          <radialGradient id="bloom-green-grad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1" />
+            <stop offset="18%" stop-color="#6EE7B7" stop-opacity="0.95" />
+            <stop offset="40%" stop-color="#22C55E" stop-opacity="0.8" />
+            <stop offset="70%" stop-color="#16A34A" stop-opacity="0.35" />
+            <stop offset="100%" stop-color="#16A34A" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+
+        <!-- Red LED Bloom: lights up vividly behind bulb at (683.5, 102) -->
+        <ellipse id="led-bloom" cx="683.5" cy="102" rx="72" ry="72" fill="url(#bloom-red-grad)" opacity="0" filter="url(#bloom-blur)" style="transition: opacity 0.08s ease-in-out; pointer-events: none;" />
+
+        <!-- Green LED Bloom (for Sim 2) -->
+        <ellipse id="led2-bloom" cx="743.5" cy="102" rx="72" ry="72" fill="url(#bloom-green-grad)" opacity="0" filter="url(#bloom-blur)" style="transition: opacity 0.08s ease-in-out; pointer-events: none;" />
+
+        <!-- Rig Sim 1 & Sim 4 (Standard LED Circuit) -->
+        <g id="rig-sim1">
+          <!-- Lead Shadows -->
+          <path d="M 681.5 125 C 681.5 158, 656.5 168, 656.5 199.5" class="led-lead-shadow" />
+          <path d="M 691.5 125 C 691.5 158, 716.5 168, 716.5 199.5" class="led-lead-shadow" />
+
+          <!-- Wire Shadows -->
+          <!-- D7 Yellow Wire Shadow: Arduino D7 (202, 70) -> Hole E10 (593.5, 196.5) -->
+          <path d="M 205 74 C 283 14, 483 64, 596.5 200.5" class="wire-shadow" />
+          <!-- Black Ground Return Jumper Shadow (E18 to -rail) -->
+          <path d="M 716.5 200 C 738 238.5, 738 283.5, 716.5 319" class="wire-shadow" />
+          <!-- Arduino GND Wire Shadow: Arduino GND (195, 252) -> Breadboard (-) Ground Rail (458.5, 315.5) -->
+          <path d="M 198 256 C 198 344, 363 384, 461.5 319.5" class="wire-shadow" />
+
+          <!-- LED Metallic Leads -->
+          <!-- Anode Lead: connects from LED base (678.5, 122) down into Hole E14 (653.5, 196.5) -->
+          <path d="M 678.5 122 C 678.5 155, 653.5 165, 653.5 196.5" class="led-lead" />
+          <!-- Cathode Lead: connects from LED base (688.5, 122) down into Hole E18 (713.5, 196.5) -->
+          <path d="M 688.5 122 C 688.5 155, 713.5 165, 713.5 196.5" class="led-lead" />
+
+          <!-- Real Colored Wires -->
+          <!-- D7 Yellow Wire: Arduino D7 (202, 70) -> Hole E10 (593.5, 196.5) -->
+          <path d="M 202 70 C 280 10, 480 60, 593.5 196.5" class="wire wire-yellow" />
+
+          <!-- Arduino GND Black Wire: Arduino GND (195, 252) -> Breadboard (-) Ground Rail Col 1 (458.5, 315.5) -->
+          <path d="M 195 252 C 195 340, 360 380, 458.5 315.5" class="wire wire-black" />
+
+          <!-- Black Ground Return Jumper: Hole E18 (713.5, 196.5) -> Breadboard (-) Ground Rail Col 18 (713.5, 315.5) -->
+          <path d="M 713.5 196.5 C 735 235, 735 280, 713.5 315.5" class="wire wire-black" />
+
+          <!-- Terminal Pins inserted into breadboard holes & Arduino headers -->
+          <!-- Arduino D7 Pin -->
+          <circle cx="202" cy="70" r="4.2" class="terminal-yellow" />
+          <!-- Hole E10 (Yellow wire + Resistor left lead) -->
+          <circle cx="593.5" cy="196.5" r="4.2" class="terminal-yellow" />
+          <circle cx="593.5" cy="196.5" r="2.2" class="terminal-lead" />
+
+          <!-- Hole E14 (Resistor right lead + LED Anode) -->
+          <circle cx="653.5" cy="196.5" r="3.2" class="terminal-lead" />
+
+          <!-- Hole E18 (LED Cathode + Black Jumper wire) -->
+          <circle cx="713.5" cy="196.5" r="4.2" class="terminal-black" />
+          <circle cx="713.5" cy="196.5" r="2.2" class="terminal-lead" />
+
+          <!-- Breadboard (-) Ground Rail Col 18 (Black Jumper wire terminal) -->
+          <circle cx="713.5" cy="315.5" r="4.2" class="terminal-black" />
+
+          <!-- Arduino GND Pin -->
+          <circle cx="195" cy="252" r="4.2" class="terminal-black" />
+          <!-- Breadboard (-) Ground Rail Col 1 (Arduino GND terminal) -->
+          <circle cx="458.5" cy="315.5" r="4.2" class="terminal-black" />
+        </g>
+
+        <!-- Optional D8 Green Wire for Sim 2 -->
+        <g id="rig-sim2-wires" style="display: none;">
+          <path d="M 193 74 C 273 4, 523 44, 671.5 200.5" class="wire-shadow" />
+          <path d="M 190 70 C 270 0, 520 40, 668.5 196.5" class="wire wire-green" />
+          <circle cx="190" cy="70" r="4.2" class="terminal-green" />
+          <circle cx="668.5" cy="196.5" r="4.2" class="terminal-green" />
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <script>
+    var runner = null;
+
+    // Auto-scale workbench to fit container cleanly
+    function autoScale() {
+      var vp = document.getElementById('viewport');
+      var wb = document.getElementById('workbench');
+      if (!vp || !wb) return;
+      var scale = Math.min(vp.clientWidth / 1000, vp.clientHeight / 440);
+      wb.style.transform = 'scale(' + Math.min(scale, 1.2) + ')';
+    }
+    window.addEventListener('resize', autoScale);
+    autoScale();
+
+    function postToRN(message) {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify(message));
+      }
+    }
+
+    function setLed1State(isOn) {
+      var ledEl = document.getElementById('led');
+      var bloomEl = document.getElementById('led-bloom');
+      if (ledEl) {
+        ledEl.value = isOn;
+        if (isOn) {
+          ledEl.classList.add('lit');
+        } else {
+          ledEl.classList.remove('lit');
+        }
+      }
+      if (bloomEl) {
+        bloomEl.style.opacity = isOn ? '0.95' : '0';
+      }
+    }
+
+    function setLed2State(isOn) {
+      var led2El = document.getElementById('led2');
+      var bloom2El = document.getElementById('led2-bloom');
+      if (led2El) {
+        led2El.value = isOn;
+        if (isOn) {
+          led2El.classList.add('lit');
+        } else {
+          led2El.classList.remove('lit');
+        }
+      }
+      if (bloom2El) {
+        bloom2El.style.opacity = isOn ? '0.95' : '0';
+      }
+    }
+
+    function configureSim(simId) {
+      var led2 = document.getElementById('led2');
+      var sim2Wires = document.getElementById('rig-sim2-wires');
+
+      if (simId === 'sim2_alternate_blink' || simId === 'sim3_binary_count') {
+        if (led2) led2.style.display = 'block';
+        if (sim2Wires) sim2Wires.style.display = 'block';
+      } else {
+        if (led2) led2.style.display = 'none';
+        if (sim2Wires) sim2Wires.style.display = 'none';
+      }
+    }
+
+    function handleRNMessage(raw) {
+      var msg;
+      try {
+        msg = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      } catch (e) {
+        postToRN({ type: 'ERROR', message: 'sim/index.html: could not parse message: ' + e.message });
+        return;
+      }
+
+      if (msg.type === 'LOAD_HEX') {
+        try {
+          configureSim(msg.simId);
+          setLed1State(false);
+          setLed2State(false);
+
+          var hexText = atob(msg.hexBase64);
+          if (runner) runner.stop();
+          runner = new window.AVRRunner(hexText);
+          window.runner = runner;
+
+          // Pin 7 = PD7 (Port D, bit 7)
+          runner.portD.addListener(function (value) {
+            var isOn = !!(value & (1 << 7));
+            setLed1State(isOn);
+            postToRN({ type: 'LED_STATE', pin: 7, on: isOn, timestamp: Date.now() });
+          });
+
+          // Pin 8 = PB0 (Port B, bit 0) & Pin 12/13
+          runner.portB.addListener(function (value) {
+            var is8On = !!(value & (1 << 0));
+            var is13On = !!(value & (1 << 5));
+            var is12On = !!(value & (1 << 4));
+
+            setLed2State(is8On || is12On);
+            postToRN({ type: 'LED_STATE', pin: 8, on: is8On, timestamp: Date.now() });
+            postToRN({ type: 'LED_STATE', pin: 13, on: is13On, timestamp: Date.now() });
+            postToRN({ type: 'LED_STATE', pin: 12, on: is12On, timestamp: Date.now() });
+          });
+        } catch (e) {
+          postToRN({ type: 'ERROR', message: 'Failed to load hex: ' + (e && e.message) });
+        }
+      } else if (msg.type === 'RUN') {
+        if (runner) runner.execute();
+      } else if (msg.type === 'STOP') {
+        if (runner) runner.stop();
+      }
+    }
+
+    document.addEventListener('message', function (e) { handleRNMessage(e.data); });
+    window.addEventListener('message', function (e) { handleRNMessage(e.data); });
+
+    postToRN({ type: 'READY' });
+
+    // Auto-demo support for browser testing (e.g. ?demo=1 or standalone)
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('demo') === '1' || urlParams.get('auto') === '1') {
+      setTimeout(function () {
+        if (window.HEX_DATA && window.HEX_DATA.sim1_led_blink) {
+          handleRNMessage({ type: 'LOAD_HEX', simId: 'sim1_led_blink', hexBase64: window.HEX_DATA.sim1_led_blink });
+          handleRNMessage({ type: 'RUN' });
+        }
+      }, 50);
+    }
+  </script>
+</body>
+</html>

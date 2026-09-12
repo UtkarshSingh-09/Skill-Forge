@@ -6,6 +6,8 @@
     "@expo/vector-icons": "^15.1.1",
     "@react-native-voice/voice": "^3.2.4",
     "@shopify/react-native-skia": "^2.6.2",
+    "@wokwi/elements": "^1.9.2",
+    "avr8js": "^0.21.1",
     "expo": "~57.0.22",
     "expo-asset": "~57.0.17",
     "expo-build-properties": "^57.0.17",
@@ -17,12 +19,15 @@
     "expo-speech": "~57.0.3",
     "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
+    "llama.rn": "0.13.0-rc.3",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-fast-opencv": "^1.0.1",
+    "react-native-fast-tflite": "^3.0.1",
     "react-native-nitro-modules": "^0.37.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-vision-camera": "^5.2.3",
+    "react-native-webview": "^14.0.1",
     "react-native-worklets-core": "^1.6.3",
     "zustand": "^5.0.15"
   },
@@ -30,13 +35,16 @@
     "@types/jest": "29.5.14",
     "@types/node": "^22.20.2",
     "@types/react": "~19.2.2",
+    "jest": "^30.5.1",
+    "ts-jest": "^29.4.12",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "jest"
   },
   "private": true
 }

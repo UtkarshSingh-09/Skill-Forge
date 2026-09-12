@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { useStore } from '../../session/store';
 import arduinoLedProcedure from '../../contract/procedures/arduino_led_v1.json';
+import arduinoAlternateLedProcedure from '../../contract/procedures/arduino_alternate_led_v1.json';
+import arduinoSosProcedure from '../../contract/procedures/arduino_sos_v1.json';
 import arduinoLedV2Procedure from '../../contract/procedures/arduino_led_v2.json';
 import andGateProcedure from '../../contract/procedures/and_gate_procedure.json';
 import { Procedure } from '../../contract/types';
@@ -17,6 +19,8 @@ export function ProcedureSelectScreen() {
 
   const procedures: Procedure[] = [
     arduinoLedProcedure as unknown as Procedure,
+    arduinoAlternateLedProcedure as unknown as Procedure,
+    arduinoSosProcedure as unknown as Procedure,
     arduinoLedV2Procedure as unknown as Procedure,
     andGateProcedure as unknown as Procedure,
   ];
@@ -70,6 +74,8 @@ export function ProcedureSelectScreen() {
             const currentId = getProcId(currentProcedure);
             const isCurrent = currentId === procId;
             const stepCount = proc.steps.length;
+            const isAlternate = procId.includes('alternate');
+            const isSos = procId.includes('sos');
             const isV2 = procId.includes('v2');
             const isIntermediate = procId.includes('AND') || procId.includes('gate');
 
@@ -77,7 +83,15 @@ export function ProcedureSelectScreen() {
             let badgeStyle: any = styles.badgeBeginner;
             let badgeTextStyle: any = styles.badgeTextBeginner;
 
-            if (isV2) {
+            if (isAlternate) {
+              badgeLabel = 'DUAL LED (D7 & D8)';
+              badgeStyle = styles.badgeProgression;
+              badgeTextStyle = styles.badgeTextProgression;
+            } else if (isSos) {
+              badgeLabel = 'DISTRESS BEACON (D7)';
+              badgeStyle = styles.badgeProgression;
+              badgeTextStyle = styles.badgeTextProgression;
+            } else if (isV2) {
               badgeLabel = 'PROGRESSION (Level 2)';
               badgeStyle = styles.badgeProgression;
               badgeTextStyle = styles.badgeTextProgression;
@@ -107,7 +121,7 @@ export function ProcedureSelectScreen() {
                   </View>
 
                   <Ionicons
-                    name={isIntermediate ? 'hardware-chip-outline' : isV2 ? 'trending-up-outline' : 'bulb-outline'}
+                    name={isAlternate ? 'swap-horizontal-outline' : isSos ? 'radio-outline' : isIntermediate ? 'hardware-chip-outline' : isV2 ? 'trending-up-outline' : 'bulb-outline'}
                     size={24}
                     color={isCurrent ? theme.color.accent : theme.color.textDim}
                   />

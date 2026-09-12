@@ -1,6 +1,7 @@
 import glob
 import json
 import logging
+import sys
 import threading
 import time
 from typing import Optional, Dict, Any
@@ -16,7 +17,17 @@ class ArduinoBridge:
         self._last_test_result: Dict[str, Any] = {"ledOn": False, "raw": 0}
 
     def find_port(self) -> Optional[str]:
-        # Check standard macOS and Linux Arduino serial devices
+        # Windows: no /dev glob patterns exist; enumerate COM ports via pyserial instead.
+        if sys.platform.startswith("win"):
+            try:
+                from serial.tools import list_ports
+            except ImportError:
+                logger.warning("pyserial not installed; cannot enumerate COM ports")
+                return None
+            ports = sorted(p.device for p in list_ports.comports())
+            return ports[0] if ports else None
+
+        # macOS and Linux Arduino serial devices
         patterns = [
             "/dev/cu.usbmodem*",
             "/dev/tty.usbmodem*",

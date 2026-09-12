@@ -5,7 +5,7 @@ import {
   EvaluationResult,
   SessionEvent,
 } from '../contract/types';
-import defaultProcedure from '../contract/procedures/led_procedure.json';
+import defaultProcedure from '../contract/procedures/arduino_led_v1.json';
 import { MOCK, MockFixtureKey, getMockObservation } from '../ui/dev/MockPerception';
 import { ProcedureEngine } from '../engine/procedureEngine';
 import { persistEvent } from './events';

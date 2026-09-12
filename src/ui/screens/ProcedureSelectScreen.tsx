@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { useStore } from '../../session/store';
+import arduinoLedProcedure from '../../contract/procedures/arduino_led_v1.json';
 import ledProcedure from '../../contract/procedures/led_procedure.json';
 import andGateProcedure from '../../contract/procedures/and_gate_procedure.json';
 import { Procedure } from '../../contract/types';
@@ -15,6 +16,7 @@ export function ProcedureSelectScreen() {
   const currentProcedure = useStore((s) => s.procedure);
 
   const procedures: Procedure[] = [
+    arduinoLedProcedure as unknown as Procedure,
     ledProcedure as unknown as Procedure,
     andGateProcedure as unknown as Procedure,
   ];

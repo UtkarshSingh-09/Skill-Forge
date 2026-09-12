@@ -1,0 +1,34 @@
+{
+  "timestampMs": 1726137600000,
+  "boardDetected": true,
+  "sceneStable": true,
+  "handsClear": true,
+  "confidence": 0.92,
+  "occupancy": {
+    "E10": true,
+    "E12": true,
+    "E14": true,
+    "E18": true
+  },
+  "components": [
+    {
+      "type": "resistor",
+      "cells": ["E10", "E12"],
+      "confidence": 0.90
+    },
+    {
+      "type": "led",
+      "cells": ["E14", "E18"],
+      "orientation": "anode_up",
+      "confidence": 0.91
+    }
+  ],
+  "connections": [
+    {
+      "from": "E10",
+      "to": "E12",
+      "type": "resistor",
+      "present": true
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { SkillBars } from '../components/SkillBars';
+import { LearningGraph } from '../components/LearningGraph';
 import { initialSkillProfile } from '../../session/skillProfile';
 
 export function ProfileScreen() {
@@ -26,6 +27,9 @@ export function ProfileScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Learning Graph Showcase Component */}
+        <LearningGraph />
 
         {/* Skill Indicators Component */}
         <SkillBars profile={profile} />

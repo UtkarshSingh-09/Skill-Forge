@@ -1,0 +1,56 @@
+{
+  "timestampMs": 1726137600000,
+  "boardDetected": true,
+  "sceneStable": true,
+  "handsClear": true,
+  "confidence": 0.95,
+  "occupancy": {
+    "E10": true,
+    "E14": true,
+    "E18": true,
+    "-rail_18": true
+  },
+  "components": [
+    {
+      "type": "resistor",
+      "cells": ["E10", "E14"],
+      "confidence": 0.94
+    },
+    {
+      "type": "led",
+      "cells": ["E14", "E18"],
+      "orientation": "anode_up",
+      "confidence": 0.92
+    },
+    {
+      "type": "wire",
+      "cells": ["E10", "+rail_10"],
+      "confidence": 0.95
+    },
+    {
+      "type": "wire",
+      "cells": ["E18", "-rail_18"],
+      "confidence": 0.96
+    }
+  ],
+  "connections": [
+    {
+      "from": "E10",
+      "to": "E14",
+      "type": "resistor",
+      "present": true
+    },
+    {
+      "from": "E14",
+      "to": "E18",
+      "type": "led",
+      "present": true
+    },
+    {
+      "from": "E18",
+      "to": "-rail_18",
+      "type": "wire",
+      "present": true
+    }
+  ]
+}

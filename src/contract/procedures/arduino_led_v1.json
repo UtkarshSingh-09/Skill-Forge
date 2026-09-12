@@ -1,0 +1,72 @@
+{
+  "procedureId": "P-ARDUINO-LED",
+  "title": "Arduino Powered LED",
+  "description": "5V Arduino USB powered circuit with 1kΩ current limiter and LED verification",
+  "difficulty": "Beginner",
+  "estimatedTimeMinutes": 3,
+  "steps": [
+    {
+      "id": 1,
+      "instruction": "Place 1kΩ resistor between hole E10 and hole E14",
+      "expect": {
+        "type": "resistor",
+        "cells": ["E10", "E14"]
+      },
+      "hints": {
+        "missing": "Insert the 1kΩ resistor with leads spanning E10 to E14.",
+        "wrong_position": "Wrong row — move one lead to E10 and other to E14.",
+        "occluded": "Move your hands away, then press TEST."
+      }
+    },
+    {
+      "id": 2,
+      "instruction": "Insert LED: long leg (anode) in E14, short leg (cathode) in E18",
+      "expect": {
+        "type": "led",
+        "cells": ["E14", "E18"],
+        "orientation": "anode_up"
+      },
+      "hints": {
+        "missing": "Insert LED with longer lead (anode) sharing row E14 with resistor.",
+        "reversed": "Reverse the LED: long lead must connect to E14 (+5V side).",
+        "wrong_position": "Move the LED cathode (short lead) to row E18."
+      }
+    },
+    {
+      "id": 3,
+      "instruction": "Connect yellow jumper wire from Arduino Pin D7 to hole E10",
+      "expect": {
+        "type": "wire",
+        "cells": ["E10", "+rail_10"]
+      },
+      "hints": {
+        "missing": "Run the yellow wire from Arduino digital pin 7 into hole E10.",
+        "wrong_position": "Check connection: wire must enter hole E10 to power the resistor."
+      }
+    },
+    {
+      "id": 4,
+      "instruction": "Connect jumper wire from hole E18 to the negative ground rail (-)",
+      "expect": {
+        "type": "wire",
+        "cells": ["E18", "-rail_18"]
+      },
+      "hints": {
+        "missing": "Add a return path wire connecting E18 to the ground rail.",
+        "wrong_position": "Connect E18 directly to the ground (-) blue rail."
+      }
+    },
+    {
+      "id": 5,
+      "instruction": "Connect black wire from Arduino GND pin to breadboard ground rail (-)",
+      "expect": {
+        "type": "wire",
+        "cells": ["-rail_1", "-rail_18"]
+      },
+      "hints": {
+        "missing": "Connect Arduino GND pin to breadboard (-) rail to complete circuit ground.",
+        "safety_violation": "Short circuit! Do not bridge 5V directly to ground."
+      }
+    }
+  ]
+}

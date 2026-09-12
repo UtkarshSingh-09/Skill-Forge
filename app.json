@@ -2,6 +2,7 @@
   "expo": {
     "name": "SkillForge",
     "slug": "skillforge",
+    "scheme": "skillforge",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

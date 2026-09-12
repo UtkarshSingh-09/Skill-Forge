@@ -9,10 +9,10 @@ const outputTsPath = path.join(__dirname, '../assets/sim/simHtml.ts');
 const template = fs.readFileSync(templatePath, 'utf8');
 const bundle = fs.readFileSync(bundlePath, 'utf8');
 
-// Replace the external bundle.js script tag with inlined script content
+// Use a function as second argument to avoid treating $ in bundle.js as replacement patterns
 const inlined = template.replace(
   '<script src="./bundle.js"></script>',
-  `<script>\n${bundle}\n</script>`
+  () => `<script>\n${bundle}\n</script>`
 );
 
 fs.writeFileSync(outputHtmlPath, inlined, 'utf8');

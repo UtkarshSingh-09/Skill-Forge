@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,9 +9,12 @@ import { VerdictPill } from '../components/VerdictPill';
 import { TestButton } from '../components/TestButton';
 import { CameraView } from '../components/CameraView';
 import { BoardOverlay } from '../components/BoardOverlay';
+import { HintSheet } from '../components/HintSheet';
 import { useStore } from '../../session/store';
 import { mapVerdict } from '../verdictView';
 import { MockFixtureKey } from '../dev/MockPerception';
+import { speak } from '../speech/tts';
+import { caps } from '../../capabilities';
 
 export function CoachScreen() {
   const router = useRouter();
@@ -26,6 +29,9 @@ export function CoachScreen() {
 
   const { requestTest, selectFixture, resetSession } = useStore((s) => s.actions);
 
+  // Bottom Sheet Visibility
+  const [hintSheetVisible, setHintSheetVisible] = useState(false);
+
   // Camera viewport dimensions for overlay homography alignment
   const [cameraSize, setCameraSize] = useState<{ width: number; height: number }>({
     width: 360,
@@ -37,6 +43,29 @@ export function CoachScreen() {
   const instruction = currentStep?.instruction ?? 'Place the resistor from +5V to E5';
 
   const verdictConfig = mapVerdict(lastResult);
+
+  // Track previous result to trigger TTS and HintSheet on state change
+  const prevResultRef = useRef<typeof lastResult>(null);
+
+  useEffect(() => {
+    // Only react when a test has completed
+    if (lastResult && lastResult !== prevResultRef.current) {
+      prevResultRef.current = lastResult;
+
+      if (lastResult.result === 'FAIL' || lastResult.result === 'UNCERTAIN') {
+        // 1. Speak feedback if TTS enabled
+        if (verdictConfig.speak) {
+          speak(verdictConfig.speak);
+        }
+        // 2. Open HintSheet automatically on FAIL/UNCERTAIN
+        setHintSheetVisible(true);
+      } else if (lastResult.result === 'PASS') {
+        if (verdictConfig.speak) {
+          speak(verdictConfig.speak);
+        }
+      }
+    }
+  }, [lastResult, verdictConfig.speak]);
 
   // Auto-navigate to summary when the last step passes
   useEffect(() => {
@@ -53,6 +82,11 @@ export function CoachScreen() {
     { key: 'correct', label: 'Correct (PASS)' },
     { key: 'occ', label: 'Occluded (UNCERTAIN)' },
   ];
+
+  const currentHintText =
+    lastResult?.hint ||
+    (currentStep && lastResult?.reason && currentStep.hints[lastResult.reason as keyof typeof currentStep.hints]) ||
+    instruction;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -85,7 +119,7 @@ export function CoachScreen() {
           color={verdictConfig.overlayColor}
           width={cameraSize.width}
           height={cameraSize.height}
-          visible={true}
+          visible={caps.overlay}
         />
 
         {/* Dev Fixture Switcher */}
@@ -132,6 +166,7 @@ export function CoachScreen() {
           <Pressable
             testID="speak-button"
             style={styles.auxButton}
+            onPress={() => speak(verdictConfig.speak || instruction)}
             accessibilityRole="button"
             accessibilityLabel="Speak hint"
           >
@@ -146,6 +181,7 @@ export function CoachScreen() {
           <Pressable
             testID="hint-button"
             style={styles.auxButton}
+            onPress={() => setHintSheetVisible(true)}
             accessibilityRole="button"
             accessibilityLabel="Show hint"
           >
@@ -158,6 +194,13 @@ export function CoachScreen() {
           Events logged: {events.length} · Step: {stepIndex + 1}/{totalSteps}
         </Text>
       </View>
+
+      {/* 4. HintSheet (Bottom sheet, max 40% height, never covers camera permanently) */}
+      <HintSheet
+        visible={hintSheetVisible}
+        template={currentHintText}
+        onClose={() => setHintSheetVisible(false)}
+      />
     </SafeAreaView>
   );
 }

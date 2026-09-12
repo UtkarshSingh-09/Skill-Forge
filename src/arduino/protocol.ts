@@ -65,5 +65,3 @@ export function parseGroundTruthResponse(cmd: 'TEST' | 'TRUTH' | 'PING' | string
     return { available: false, ledOn: false, raw: 0 };
   }
 }
-  }
-}

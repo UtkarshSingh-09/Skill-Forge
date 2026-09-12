@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "circuit": "arduino_led_v1",
+  "space": "HSV",
+  "format": "OpenCV (H: 0-180, S: 0-255, V: 0-255)",
+  "ranges": {
+    "red_wire": {
+      "name": "Red Wire (VCC / 5V)",
+      "description": "Red power rail jumper from Arduino 5V",
+      "hsv_lower_1": [0, 80, 60],
+      "hsv_upper_1": [10, 255, 255],
+      "hsv_lower_2": [170, 80, 60],
+      "hsv_upper_2": [180, 255, 255]
+    },
+    "black_wire": {
+      "name": "Black Wire (GND)",
+      "description": "Ground return jumper to Arduino GND and breadboard -rail",
+      "hsv_lower": [0, 0, 0],
+      "hsv_upper": [180, 100, 55]
+    },
+    "yellow_wire": {
+      "name": "Yellow Wire (Signal / D7)",
+      "description": "Signal wire from Arduino Digital Pin 7 to breadboard hole E10",
+      "hsv_lower": [18, 70, 70],
+      "hsv_upper": [35, 255, 255]
+    },
+    "led_body_red": {
+      "name": "5mm Red Diffused LED",
+      "description": "Diffused red epoxy body placed at E14 (anode) and E18 (cathode)",
+      "hsv_lower_1": [0, 100, 70],
+      "hsv_upper_1": [12, 255, 255],
+      "hsv_lower_2": [168, 100, 70],
+      "hsv_upper_2": [180, 255, 255]
+    },
+    "resistor_1k": {
+      "name": "1kΩ Resistor (Brown-Black-Red-Gold)",
+      "description": "Axial carbon film body placed between E10 and E14",
+      "hsv_lower": [8, 30, 40],
+      "hsv_upper": [25, 150, 160],
+      "tolerance": 0.05
+    },
+    "board_empty_hole": {
+      "name": "Empty Breadboard Hole",
+      "description": "Dark shadow patch inside empty hole recess",
+      "hsv_lower": [0, 0, 15],
+      "hsv_upper": [180, 50, 60]
+    }
+  }
+}

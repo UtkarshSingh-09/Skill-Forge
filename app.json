@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "skillforge",
+    "name": "SkillForge",
     "slug": "skillforge",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,6 +10,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.skillforge.app",
+      "permissions": ["CAMERA", "RECORD_AUDIO"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +22,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      ["expo-build-properties", { "android": { "newArchEnabled": true } }],
+      ["react-native-vision-camera", {
+        "cameraPermissionText": "SkillForge needs the camera to see your circuit."
+      }]
+    ]
   }
 }

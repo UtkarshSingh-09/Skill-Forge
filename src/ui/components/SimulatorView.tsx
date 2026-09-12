@@ -107,7 +107,8 @@ export function SimulatorView({
   onLedState,
   onError,
 }: SimulatorViewProps) {
-  const webviewRef = useRef<WebView>(null);
+  const webviewRef = useRef<any>(null);
+  const WebRenderer: any = WebView;
   const [ready, setReady] = useState(false);
   const [internalRunning, setInternalRunning] = useState(true);
   const [codeModalVisible, setCodeModalVisible] = useState(false);
@@ -212,7 +213,7 @@ export function SimulatorView({
 
       {/* Simulator Circuit avr8js WebView Container */}
       <View style={styles.graphicContainer}>
-        <WebView
+        <WebRenderer
           ref={webviewRef}
           // eslint-disable-next-line @typescript-eslint/no-var-requires
           source={require('../../../assets/sim/index.html')}

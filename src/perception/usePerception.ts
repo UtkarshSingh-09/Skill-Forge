@@ -42,7 +42,8 @@ export function usePerception(onState?: (obs: ObservationState) => void) {
       if (caps.mlDetector) {
         return runDetectorFromModels(frame);
       }
-      return MOCK[selectedFixture] || MOCK.correct;
+      const key = selectedFixture === 'live' ? 'correct' : selectedFixture;
+      return MOCK[key] || MOCK.correct;
     },
   };
 }

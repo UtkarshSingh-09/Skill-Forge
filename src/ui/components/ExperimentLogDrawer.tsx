@@ -79,7 +79,7 @@ export function ExperimentLogDrawer() {
 
             <FlatList
               data={experiments}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item, index) => String(item.id ?? index)}
               renderItem={renderItem}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}

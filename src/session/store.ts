@@ -5,6 +5,7 @@ import {
   EvaluationResult,
   SessionEvent,
   GroundTruth,
+  Verdict,
 } from '../contract/types';
 import defaultProcedure from '../contract/procedures/arduino_led_v1.json';
 import { MockFixtureKey, getMockObservation } from '../ui/dev/MockPerception';
@@ -15,7 +16,7 @@ import { createLearningNodeFromEvents } from '../engine/learningGraph';
 import { updateLearningGraph, getLearningHistory } from './skillProfile';
 import { caps } from '../capabilities';
 import {
-  InteractionState,
+  InteractionState as FlowInteractionState,
   InteractionEvent,
   INITIAL_INTERACTION_STATE,
   reduceInteraction,
@@ -28,16 +29,21 @@ export interface SensorState {
 }
 
 export interface InteractionState {
-  question: string;
-  active: boolean;
+  question?: string;
+  active?: boolean;
   status?: string;
+  phase?: string;
+  suggestedSimId?: string;
+  activeSimId?: string;
+  result?: EvaluationResult;
+  hint?: string | null;
 }
 
 export interface ExperimentRun {
-  id: string;
+  id?: string | number;
   name: string;
   simId: string;
-  verdict: 'PASS' | 'FAIL' | 'UNCERTAIN';
+  verdict: 'PASS' | 'FAIL' | 'UNCERTAIN' | Verdict;
   timestamp: number;
 }
 
@@ -222,14 +228,15 @@ export const useStore = create<AppState>((set, get) => ({
       if (result.result === 'PASS' || result.result === 'FAIL') {
         const procName = currentProcedure.title ?? currentProcedure.id ?? 'Untitled Procedure';
         const procId = currentProcedure.id || (currentProcedure as any).procedureId || 'unknown';
-        const row: ExperimentRow = {
+        const row: ExperimentRun = {
+          id: `exp_${Date.now()}`,
           name: `${procName} — Step ${state.stepIndex + 1}`,
           simId: procId,
           verdict: result.result,
           timestamp: Date.now(),
         };
         set((s) => ({ experiments: [row, ...s.experiments] }));
-        void persistExperiment(row);
+        void persistExperiment(row as ExperimentRow);
       }
 
       // 6. Push matching SessionEvent
@@ -341,14 +348,26 @@ export const useStore = create<AppState>((set, get) => ({
 
     loadExperiments: async () => {
       const rows = await getAllExperiments();
-      set({ experiments: rows });
+      set({ experiments: rows as ExperimentRun[] });
     },
 
     dispatchInteraction: (event: InteractionEvent) => {
       const current = get().interaction;
-      const next = reduceInteraction(current, event);
+      const flowState: FlowInteractionState = {
+        phase: (current?.phase as any) || 'IDLE',
+        suggestedSimId: current?.suggestedSimId,
+        question: current?.question,
+        activeSimId: current?.activeSimId,
+        result: current?.result,
+        hint: current?.hint,
+      };
+      const next = reduceInteraction(flowState, event);
       set({
-        interaction: next,
+        interaction: {
+          ...next,
+          active: next.phase !== 'IDLE',
+          question: next.question || current?.question || '',
+        },
         sensors: {
           ...get().sensors,
           mic: micShouldBeActive(next),

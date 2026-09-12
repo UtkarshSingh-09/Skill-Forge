@@ -1,0 +1,51 @@
+{
+  "timestamp": 1789191000000,
+  "boardDetected": true,
+  "handsClear": true,
+  "sceneStable": true,
+  "components": [
+    {
+      "type": "ic_7408",
+      "cells": ["E10", "F10"],
+      "confidence": 0.95,
+      "orientation": "STANDARD"
+    },
+    {
+      "type": "wire",
+      "cells": ["F10", "+rail"],
+      "confidence": 0.92,
+      "color": "red"
+    },
+    {
+      "type": "wire",
+      "cells": ["E16", "-rail"],
+      "confidence": 0.90,
+      "color": "black"
+    },
+    {
+      "type": "wire",
+      "cells": ["E10", "Arduino_D2"],
+      "confidence": 0.88,
+      "color": "yellow"
+    },
+    {
+      "type": "wire",
+      "cells": ["E11", "Arduino_D3"],
+      "confidence": 0.88,
+      "color": "yellow"
+    },
+    {
+      "type": "wire",
+      "cells": ["E12", "Arduino_D4"],
+      "confidence": 0.89,
+      "color": "yellow"
+    }
+  ],
+  "connections": [
+    { "from": "+rail", "to": "F10", "present": true, "confidence": 0.92 },
+    { "from": "-rail", "to": "E16", "present": true, "confidence": 0.90 },
+    { "from": "Arduino_D2", "to": "E10", "present": true, "confidence": 0.88 },
+    { "from": "Arduino_D3", "to": "E11", "present": true, "confidence": 0.88 },
+    { "from": "Arduino_D4", "to": "E12", "present": true, "confidence": 0.89 }
+  ]
+}

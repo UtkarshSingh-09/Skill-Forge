@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillForge — Mentor & Teacher Analytics Dashboard</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --card-border: #30363d;
+      --text: #c9d1d9;
+      --text-bright: #f0f6fc;
+      --accent: #58a6ff;
+      --accent-glow: rgba(88, 166, 255, 0.15);
+      --success: #2ea043;
+      --danger: #f85149;
+      --warning: #d29922;
+      --purple: #a371f7;
+      --cyan: #388bfd;
+      --muted: #8b949e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 24px;
+    }
+
+    h1 { color: var(--text-bright); font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .header-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .stat-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text-bright); margin-top: 6px; }
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .main-layout { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      color: var(--text-bright);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .timeline-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 0;
+      border-bottom: 1px solid #21262d;
+      font-size: 13px;
+    }
+    .timeline-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .timeline-time { color: var(--muted); font-family: monospace; font-size: 12px; }
+    
+    .event-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .type-PASS { background: #2ea04322; color: var(--success); border: 1px solid var(--success); }
+    .type-FAIL { background: #f8514922; color: var(--danger); border: 1px solid var(--danger); }
+    .type-SAFETY_WARNING { background: #d2992222; color: var(--warning); border: 1px solid var(--warning); }
+    .type-DEBUG_INTERVENTION { background: #a371f722; color: var(--purple); border: 1px solid var(--purple); }
+    .type-GROUND_TRUTH { background: #388bfd22; color: var(--cyan); border: 1px solid var(--cyan); }
+    .type-TEST_REQUESTED { background: #58a6ff22; color: var(--accent); border: 1px solid var(--accent); }
+    .type-STATE_CHANGE { background: #8b949e22; color: var(--muted); border: 1px solid var(--muted); }
+    .type-SESSION_START { background: #1f6feb22; color: #58a6ff; border: 1px solid #58a6ff; }
+
+    .timeline-body {
+      color: #e6edf3;
+      font-size: 12.5px;
+      padding-left: 2px;
+    }
+
+    .skill-bar {
+      margin-bottom: 16px;
+    }
+
+    .skill-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .bar-bg {
+      height: 10px;
+      background: #21262d;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #1f6feb, #58a6ff);
+      border-radius: 5px;
+      transition: width 0.4s ease;
+    }
+
+    .dropzone {
+      border: 2px dashed var(--card-border);
+      border-radius: 10px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.2s ease;
+      background: #0d111744;
+    }
+
+    .dropzone:hover {
+      border-color: var(--accent);
+      color: var(--text-bright);
+      background: var(--accent-glow);
+    }
+
+    .dropzone p { font-size: 13px; margin-top: 6px; }
+    .dropzone code { background: #21262d; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--success);
+      color: var(--text-bright);
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>⚡ SkillForge Live Mentor Console</h1>
+      <p class="header-sub">Autonomous Electronics Lab Verification & Skill Analytics (Phase B.6)</p>
+    </div>
+    <div class="status-pill" id="connStatus">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="connText">LIVE • LOCALHOST</span>
+    </div>
+  </header>
+
+  <div class="grid-stats">
+    <div class="stat-card">
+      <div class="stat-label">Session ID</div>
+      <div class="stat-value" id="statSession" style="font-size: 16px; line-height: 36px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">demo_baseline</div>
+      <div class="stat-sub" id="statProcedure">Procedure: led_basic_v1</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Autonomy Index</div>
+      <div class="stat-value" id="statAutonomy" style="color: var(--success);">88%</div>
+      <div class="stat-sub">Goal: &ge; 75% unassisted</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Safety Compliance</div>
+      <div class="stat-value" id="statSafety" style="color: var(--accent);">96%</div>
+      <div class="stat-sub">Zero critical burnouts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Patience Score</div>
+      <div class="stat-value" id="statPatience" style="color: var(--purple);">92%</div>
+      <div class="stat-sub">Single-variable inquiry</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Duration / Events</div>
+      <div class="stat-value" id="statDuration" style="font-size: 22px; line-height: 36px;">00:45</div>
+      <div class="stat-sub" id="statEventSummary">4 total events</div>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div>
+      <div class="card">
+        <h2>
+          <span>Session Event Stream</span>
+          <span style="font-size: 12px; color: var(--muted); font-weight: normal;" id="eventCount">4 events</span>
+        </h2>
+        <div id="timeline"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>
+          <span>Learning Curve (Mastery Arc)</span>
+          <span style="font-size: 12px; color: var(--success); font-weight: 700;" id="masterySummary">82% Overall Mastery</span>
+        </h2>
+        <div id="learningGraphContainer" style="font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #21262d;">
+            <div><span style="color: var(--muted);">Attempt 1 (Guided):</span> <strong>60%</strong> <span style="font-size: 11px; color: var(--muted);">(135s, 3 hints)</span></div>
+            <div style="color: var(--warning); font-weight: 600;">Novice</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #21262d;">
+            <div><span style="color: var(--muted);">Attempt 2 (Iterative):</span> <strong>85%</strong> <span style="font-size: 11px; color: var(--muted);">(72s, 1 hint)</span></div>
+            <div style="color: var(--accent); font-weight: 600;">Proficient</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #21262d;">
+            <div><span style="color: var(--muted);">Attempt 3 (Independent):</span> <strong>100%</strong> <span style="font-size: 11px; color: var(--muted);">(38s, 0 hints)</span></div>
+            <div style="color: var(--success); font-weight: 600;">Mastered 🏆</div>
+          </div>
+          <div style="background: rgba(46, 160, 67, 0.1); border: 1px solid var(--success); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--text-bright); margin-top: 8px;">
+            📈 <strong>Progression:</strong> +40% accuracy gain & 72% time reduction across 3 attempts
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Concept Mastery</h2>
+        <div id="skillsContainer"></div>
+      </div>
+
+      <div class="card">
+        <h2>Hardware Telemetry</h2>
+        <div id="hardwareContainer" style="font-size: 13px; color: var(--muted);">
+          <p>⚡ <strong>OTG Ground Truth:</strong> <span id="hwStatus">Active (Voltage: 680mV)</span></p>
+          <p style="margin-top: 6px;">🔌 <strong>Truth Table Verification:</strong> <span id="hwTruth">Pass (4/4 Rows)</span></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Import Session JSON</h2>
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+          <input type="file" id="fileInput" style="display: none;" accept=".json" onchange="handleFile(this.files)">
+          <div style="font-size: 24px; margin-bottom: 4px;">📂</div>
+          <strong>Drag and drop <code>SkillForge_Session_*.json</code></strong>
+          <p>Or click to browse from Office Kit transfer folder</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Session imported successfully!</div>
+
+  <script>
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch('/api/session/latest');
+        if (res.ok) {
+          const data = await res.json();
+          renderDashboard(data);
+          document.getElementById('connText').textContent = 'LIVE • LOCALHOST';
+          document.getElementById('statusDot').style.background = 'var(--success)';
+        }
+      } catch (err) {
+        document.getElementById('connText').textContent = 'OFFLINE • FILE VIEW';
+        document.getElementById('statusDot').style.background = 'var(--warning)';
+      }
+    }
+
+    function formatDuration(ms) {
+      if (!ms || ms <= 0) return '00:00';
+      const sec = Math.floor(ms / 1000);
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function renderDashboard(data) {
+      if (!data) return;
+      document.getElementById('statSession').textContent = data.sessionId || 'Active';
+      document.getElementById('statProcedure').textContent = 'Procedure: ' + (data.procedureId || 'led_basic_v1');
+
+      const prof = data.skillProfile || {};
+      document.getElementById('statAutonomy').textContent = Math.round((prof.autonomyIndex || 0) * 100) + '%';
+      document.getElementById('statSafety').textContent = Math.round((prof.safetyScore || 0) * 100) + '%';
+      document.getElementById('statPatience').textContent = Math.round((prof.troubleshootingPatience || 0) * 100) + '%';
+
+      const events = data.events || [];
+      document.getElementById('eventCount').textContent = events.length + ' events';
+      document.getElementById('statEventSummary').textContent = `${events.length} total events`;
+      document.getElementById('statDuration').textContent = formatDuration(data.durationMs);
+
+      // Hardware Telemetry
+      const hw = data.hardwareTelemetry || {};
+      if (hw.truthTableRowsVerified) {
+        document.getElementById('hwStatus').innerHTML = `<span style="color: var(--cyan); font-weight: 600;">7408 Verified (${hw.truthTableRowsVerified} Rows)</span>`;
+      } else if (hw.verifiedGroundTruth) {
+        document.getElementById('hwStatus').innerHTML = `<span style="color: var(--success); font-weight: 600;">Verified (${hw.lastVoltageMv || 680}mV)</span>`;
+      } else {
+        document.getElementById('hwStatus').textContent = 'Camera-Only Mode (Offline)';
+      }
+      if (hw.truthTableRowsVerified) {
+        document.getElementById('hwTruth').innerHTML = `<span style="color: var(--cyan); font-weight: 600;">Logic Gate Active</span>`;
+      }
+
+      // Event Timeline
+      const timeline = document.getElementById('timeline');
+      timeline.innerHTML = '';
+
+      events.slice().reverse().forEach(e => {
+        const row = document.createElement('div');
+        row.className = 'timeline-item';
+        const d = new Date(e.timestamp || Date.now());
+        const timeStr = d.toTimeString().split(' ')[0];
+
+        let detailText = '';
+        if (e.type === 'DEBUG_INTERVENTION' && e.payload) {
+          detailText = `<strong>[${e.payload.type || 'COACH'}]</strong> ${e.payload.message || ''}`;
+        } else if (e.type === 'GROUND_TRUTH' && e.payload) {
+          if (Array.isArray(e.payload.truthTable) && e.payload.truthTable.length > 0) {
+            const rowsHtml = e.payload.truthTable.map((r) => {
+              const pass = r.out === r.expected;
+              return `<tr style="border-bottom: 1px solid var(--border); ${pass ? '' : 'background: rgba(248,81,73,0.1);'}">
+                <td style="padding: 4px 8px;">${r.a}</td>
+                <td style="padding: 4px 8px;">${r.b}</td>
+                <td style="padding: 4px 8px; font-weight: bold; color: ${pass ? 'var(--success)' : 'var(--danger)'};">${r.out}</td>
+                <td style="padding: 4px 8px;">${r.expected}</td>
+                <td style="padding: 4px 8px;"><span class="event-badge ${pass ? 'type-PASS' : 'type-FAIL'}" style="font-size: 0.65rem; padding: 2px 6px;">${pass ? 'PASS' : 'FAIL'}</span></td>
+              </tr>`;
+            }).join('');
+            detailText = `<strong>⚡ 7408 AND Gate Electrical Truth Table:</strong>
+              <table style="width: 100%; margin-top: 8px; font-size: 0.8rem; border-collapse: collapse; text-align: center; background: #0d1117; border-radius: 6px; overflow: hidden; border: 1px solid var(--border);">
+                <thead>
+                  <tr style="background: var(--surface); color: var(--text-muted); font-size: 0.75rem;">
+                    <th style="padding: 6px;">A (D2)</th><th style="padding: 6px;">B (D3)</th><th style="padding: 6px;">Out Y (D4)</th><th style="padding: 6px;">Expected</th><th style="padding: 6px;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+              </table>`;
+          } else {
+            detailText = `Hardware Voltage: <strong>${e.payload.raw || 0}mV</strong> (${e.payload.ledOn ? 'LED ON' : 'LED OFF'})`;
+          }
+        } else if (e.type === 'SAFETY_WARNING' && e.payload) {
+          detailText = `⚠️ <strong style="color: var(--danger);">${e.payload.ruleId || 'HAZARD'}</strong>: ${e.payload.message || 'Safety hazard detected'}`;
+        } else if (e.type === 'FAIL' && e.payload) {
+          detailText = `Reason: <strong>${e.payload.reason || 'Incorrect placement'}</strong>`;
+        } else if (e.type === 'PASS') {
+          detailText = `Verification step committed successfully`;
+        } else {
+          detailText = JSON.stringify(e.payload || {});
+        }
+
+        row.innerHTML = `
+          <div class="timeline-header">
+            <span class="timeline-time">${timeStr}</span>
+            <span class="event-badge type-${e.type}">${e.type}</span>
+          </div>
+          <div class="timeline-body">${detailText}</div>
+        `;
+        timeline.appendChild(row);
+      });
+
+      // Concept Mastery Bars
+      const skillsContainer = document.getElementById('skillsContainer');
+      skillsContainer.innerHTML = '';
+      const mastery = prof.conceptMastery || {};
+      for (const [key, val] of Object.entries(mastery)) {
+        const pct = Math.round(val * 100);
+        const el = document.createElement('div');
+        el.className = 'skill-bar';
+        el.innerHTML = `
+          <div class="skill-info">
+            <span style="text-transform: capitalize;">${key.replace(/([A-Z])/g, ' $1')}</span>
+            <span style="font-weight: 600;">${pct}%</span>
+          </div>
+          <div class="bar-bg"><div class="bar-fill" style="width: ${pct}%;"></div></div>
+        `;
+        skillsContainer.appendChild(el);
+      }
+    }
+
+    async function handleFile(files) {
+      if (!files || !files[0]) return;
+      const file = files[0];
+
+      // Try uploading to server first
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (res.ok) {
+          showToast('Uploaded to server & updated!');
+          loadData();
+          return;
+        }
+      } catch (err) {
+        console.warn('Server upload failed, using client-side FileReader fallback');
+      }
+
+      // Standalone Offline Client-Side FileReader Fallback (Decision D21 / §18.9.4)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          renderDashboard(parsed);
+          showToast('Loaded locally via offline parser!');
+        } catch (parseErr) {
+          alert('Failed to parse JSON: ' + parseErr);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Drag and drop handling
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--accent)'; });
+    dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = 'var(--card-border)'; });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'var(--card-border)';
+      if (e.dataTransfer && e.dataTransfer.files) {
+        handleFile(e.dataTransfer.files);
+      }
+    });
+
+    loadData();
+    setInterval(loadData, 3000);
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,18 @@
+{
+  "obs_correct": {
+    "result": "PASS",
+    "reason": null,
+    "confidenceMin": 0.75,
+    "safetyViolations": []
+  },
+  "obs_wrong_position": {
+    "result": "FAIL",
+    "reason": "wrong_position",
+    "expectedHighlight": ["D10", "D14"]
+  },
+  "obs_occluded": {
+    "result": "UNCERTAIN",
+    "reason": "occluded",
+    "confidence": 0
+  }
+}

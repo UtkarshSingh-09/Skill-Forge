@@ -1,0 +1,74 @@
+{
+  "name": "Standard 400-Point Solderless Breadboard",
+  "boardType": "half_size_400_tie_points",
+  "fiducialSpacingMm": {
+    "x": 180.0,
+    "y": 120.0
+  },
+  "originHoleMm": {
+    "x": 22.5,
+    "y": 31.0,
+    "hole": "A1"
+  },
+  "holePitchMm": 2.54,
+  "rows": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+  "cols": 30,
+  "terminalBanks": {
+    "lower": {
+      "rows": ["A", "B", "C", "D", "E"],
+      "connectedVertically": true,
+      "description": "Lower 5-hole terminal strip. Within one column, A-B-C-D-E form one common electrical node."
+    },
+    "upper": {
+      "rows": ["F", "G", "H", "I", "J"],
+      "connectedVertically": true,
+      "description": "Upper 5-hole terminal strip. Within one column, F-G-H-I-J form one common electrical node."
+    }
+  },
+  "centerChannel": {
+    "straddleBetweenRows": ["E", "F"],
+    "gapMm": 7.62,
+    "widthInches": 0.3,
+    "breaksVerticalContinuity": true,
+    "purpose": "Center channel divider (the gap). Electrically isolates lower bank (A-E) from upper bank (F-J). DIP IC chips (14/16-pin) and microcontroller dev boards must straddle this channel."
+  },
+  "rails": {
+    "+rail_yMm": 8.0,
+    "-rail_yMm": 112.0,
+    "top": {
+      "+rail": { "yMm": 8.0, "polarity": "positive", "label": "VCC / +5V", "colorCode": "red" },
+      "-rail": { "yMm": 16.0, "polarity": "ground", "label": "GND / 0V", "colorCode": "blue/black" }
+    },
+    "bottom": {
+      "+rail": { "yMm": 104.0, "polarity": "positive", "label": "VCC / +5V", "colorCode": "red" },
+      "-rail": { "yMm": 112.0, "polarity": "ground", "label": "GND / 0V", "colorCode": "blue/black" }
+    },
+    "orientation": "horizontal",
+    "splitInMiddle": false
+  },
+  "electricalSpecs": {
+    "holePitchInches": 0.1,
+    "holePitchMm": 2.54,
+    "maxCurrentAmps": 1.0,
+    "wireType": "solid_core_22awg"
+  },
+  "colorConventions": {
+    "positiveSupply": {
+      "colors": ["red"],
+      "usage": "Positive supply (+V, +5V, +3.3V)"
+    },
+    "ground": {
+      "colors": ["black", "blue"],
+      "usage": "Ground / negative (-V, GND)"
+    },
+    "signal": {
+      "colors": ["yellow", "green", "orange", "white", "purple"],
+      "usage": "GPIO, logic inputs/outputs, sensor data lines"
+    }
+  },
+  "rules": {
+    "componentsMustSpanDifferentNodes": true,
+    "icMustStraddleCenterChannel": true,
+    "railsContinuousHorizontally": true
+  }
+}

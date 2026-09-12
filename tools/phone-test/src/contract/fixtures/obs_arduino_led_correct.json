@@ -1,0 +1,51 @@
+{
+  "timestamp": 1789195000000,
+  "boardDetected": true,
+  "handsClear": true,
+  "sceneStable": true,
+  "components": [
+    {
+      "type": "resistor",
+      "cells": ["E10", "E14"],
+      "confidence": 0.94
+    },
+    {
+      "type": "led",
+      "cells": ["E14", "E18"],
+      "confidence": 0.95,
+      "orientation": "STANDARD"
+    },
+    {
+      "type": "wire",
+      "cells": ["Arduino_5V", "+rail"],
+      "confidence": 0.92,
+      "color": "red"
+    },
+    {
+      "type": "wire",
+      "cells": ["Arduino_GND", "-rail"],
+      "confidence": 0.93,
+      "color": "black"
+    },
+    {
+      "type": "wire",
+      "cells": ["Arduino_D7", "E10"],
+      "confidence": 0.91,
+      "color": "yellow"
+    },
+    {
+      "type": "wire",
+      "cells": ["E18", "-rail"],
+      "confidence": 0.92,
+      "color": "black"
+    }
+  ],
+  "connections": [
+    { "from": "Arduino_5V", "to": "+rail", "present": true, "confidence": 0.92 },
+    { "from": "Arduino_GND", "to": "-rail", "present": true, "confidence": 0.93 },
+    { "from": "Arduino_D7", "to": "E10", "present": true, "confidence": 0.91 },
+    { "from": "E10", "to": "E14", "present": true, "confidence": 0.94 },
+    { "from": "E14", "to": "E18", "present": true, "confidence": 0.95 },
+    { "from": "E18", "to": "-rail", "present": true, "confidence": 0.92 }
+  ]
+}

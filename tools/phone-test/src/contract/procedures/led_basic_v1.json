@@ -1,0 +1,77 @@
+{
+  "id": "led_basic_v1",
+  "title": "Basic LED Circuit with Current Limiter",
+  "description": "Construct a basic protected LED circuit across a 5V breadboard rail.",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": "step_1_resistor",
+      "title": "Place Current-Limiting Resistor",
+      "instruction": "Insert a 330 ohm resistor into rows D10 and D14.",
+      "expect": {
+        "type": "resistor",
+        "cells": ["D10", "D14"]
+      },
+      "hints": {
+        "missing": "Place the 330 ohm resistor on the board.",
+        "wrong_position": "Move the resistor so its legs connect to rows D10 and D14."
+      }
+    },
+    {
+      "id": "step_2_led",
+      "title": "Place the LED",
+      "instruction": "Insert the LED: Anode (red tagged leg) in D14, Cathode in D18.",
+      "expect": {
+        "type": "led",
+        "cells": ["D14", "D18"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Insert the LED into holes D14 and D18.",
+        "wrong_position": "Check LED holes: long leg (anode) in D14, short leg in D18.",
+        "reversed": "Reverse the LED: the red-tagged anode must connect to the resistor at D14."
+      }
+    },
+    {
+      "id": "step_3_vcc_wire",
+      "title": "Connect Power Rail",
+      "instruction": "Connect a red wire from the +rail (VCC) to row D10.",
+      "expect": {
+        "type": "wire",
+        "cells": ["+rail", "D10"],
+        "color": "red"
+      },
+      "hints": {
+        "missing": "Connect a red wire from +rail to row D10.",
+        "wrong_position": "One end of the red wire must be in +rail, the other in D10."
+      }
+    },
+    {
+      "id": "step_4_gnd_wire",
+      "title": "Connect Ground Return",
+      "instruction": "Connect a black wire from row D18 to the -rail (GND).",
+      "expect": {
+        "type": "wire",
+        "cells": ["D18", "-rail"],
+        "color": "black"
+      },
+      "hints": {
+        "missing": "Connect a black wire from D18 to the ground rail (-rail).",
+        "wrong_position": "One end of the black wire must be in D18, the other in -rail."
+      }
+    },
+    {
+      "id": "step_5_final_test",
+      "title": "Verify Circuit Integrity",
+      "instruction": "Ensure hands are clear and press TEST to verify complete circuit before powering.",
+      "expect": {
+        "type": "led",
+        "cells": ["D14", "D18"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Ensure all components remain firmly seated in their holes."
+      }
+    }
+  ]
+}

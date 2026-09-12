@@ -40,6 +40,11 @@ export function CapabilityToggles({ currentCaps, onToggle }: CapabilityTogglesPr
       label: 'Voice Trigger (STT)',
       description: 'Allows hands-free voice command to trigger TEST (optional)',
     },
+    {
+      key: 'xray',
+      label: 'Circuit X-Ray',
+      description: 'Expected schematic annotated with verified/unverified state (optional)',
+    },
   ];
 
   return (

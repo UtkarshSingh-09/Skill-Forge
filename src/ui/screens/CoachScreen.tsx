@@ -12,6 +12,7 @@ import { BoardOverlay } from '../components/BoardOverlay';
 import { HintSheet } from '../components/HintSheet';
 import { SafetyBanner, DebugCoachBanner } from '../components/CoachBanners';
 import { ArduinoPanel } from '../components/ArduinoPanel';
+import { CircuitXRay } from '../components/CircuitXRay';
 import { useStore } from '../../session/store';
 import { mapVerdict } from '../verdictView';
 import { MockFixtureKey } from '../dev/MockPerception';
@@ -36,6 +37,7 @@ export function CoachScreen() {
 
   // Bottom Sheet Visibility and LLM Explanation state
   const [hintSheetVisible, setHintSheetVisible] = useState(false);
+  const [xrayVisible, setXrayVisible] = useState(false);
   const [llmExplanation, setLlmExplanation] = useState<string | undefined>(undefined);
   const [debugMessage, setDebugMessage] = useState<string | null>(null);
 
@@ -210,6 +212,19 @@ export function CoachScreen() {
           <VerdictPill evaluation={lastResult} />
         </View>
 
+        {/* Optional Circuit X-Ray Chip (B.5 / F.6) */}
+        {caps.xray && (
+          <Pressable
+            style={styles.xrayChip}
+            onPress={() => setXrayVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Circuit X-Ray"
+          >
+            <Ionicons name="scan-outline" size={13} color={theme.color.accent} />
+            <Text style={styles.xrayChipText}>Circuit X-Ray</Text>
+          </Pressable>
+        )}
+
         {/* Action Row: Speak, TestButton, Hint */}
         <View style={styles.actionRow}>
           <Pressable
@@ -250,6 +265,15 @@ export function CoachScreen() {
         template={currentHintText}
         llmText={llmExplanation}
         onClose={() => setHintSheetVisible(false)}
+      />
+
+      {/* 5. Circuit X-Ray (Modal schematic inspection, gated by caps.xray) */}
+      <CircuitXRay
+        visible={xrayVisible}
+        onClose={() => setXrayVisible(false)}
+        procedure={procedure}
+        stepIndex={stepIndex}
+        lastResult={lastResult}
       />
     </SafeAreaView>
   );
@@ -338,6 +362,25 @@ const styles = StyleSheet.create({
   pillContainer: {
     alignItems: 'center',
     width: '100%',
+  },
+  xrayChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    backgroundColor: '#1E293B',
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#334155',
+    alignSelf: 'center',
+  },
+  xrayChipText: {
+    color: theme.color.accent,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   actionRow: {
     flexDirection: 'row',

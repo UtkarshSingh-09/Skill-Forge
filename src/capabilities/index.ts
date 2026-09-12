@@ -3,7 +3,8 @@ export const caps = {
   arduino: false,
   tts: true,
   stt: false,
-  overlay: true
+  overlay: true,
+  xray: true
 };
 
 export function setCapability(key: keyof typeof caps, value: boolean) {

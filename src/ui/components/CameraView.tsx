@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, LayoutChangeEvent } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Text, Pressable, LayoutChangeEvent } from 'react-native';
 import { usePathname } from 'expo-router';
+import { CameraView as ExpoCameraView, useCameraPermissions } from 'expo-camera';
+import { Ionicons } from '@expo/vector-icons';
 import { BreadboardGraphic } from './BreadboardGraphic';
 import { theme } from '../theme';
 
-// Safely attempt to import react-native-vision-camera
+// Safely attempt to import react-native-vision-camera if available in standalone binary
 let VisionCameraComponent: any = null;
-let requestCameraPermissionFn: (() => Promise<string>) | null = null;
 let useCameraDeviceHook: any = null;
 
 try {
   const RNC = require('react-native-vision-camera');
   VisionCameraComponent = RNC.Camera;
-  requestCameraPermissionFn = RNC.Camera?.requestCameraPermission;
   useCameraDeviceHook = RNC.useCameraDevice;
 } catch {
-  // Graceful fallback for Expo Go / simulator / mock mode
   VisionCameraComponent = null;
 }
 
@@ -29,36 +28,16 @@ interface CameraViewProps {
 export function CameraView({
   isActive = true,
   onLayout,
-  fixtureMode = true,
+  fixtureMode: initialFixtureMode = false,
 }: CameraViewProps) {
   const pathname = usePathname();
   const isFocused = pathname === '/coach' || pathname.includes('coach');
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [showVirtualBoard, setShowVirtualBoard] = useState<boolean>(initialFixtureMode);
   const [dimensions, setDimensions] = useState<{ width: number; height: number }>({
     width: 360,
     height: 300,
   });
-
-  // Request camera permission on mount if native camera is available
-  useEffect(() => {
-    let isMounted = true;
-    const checkPermission = async () => {
-      if (requestCameraPermissionFn) {
-        try {
-          const status = await requestCameraPermissionFn();
-          if (isMounted) {
-            setHasPermission(status === 'granted');
-          }
-        } catch {
-          if (isMounted) setHasPermission(false);
-        }
-      }
-    };
-    checkPermission();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const handleLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -66,35 +45,82 @@ export function CameraView({
     if (onLayout) onLayout(e);
   };
 
-  // If in fixture mode, or native camera not available or permission denied:
-  // Render the calibrated static breadboard graphic
-  const shouldRenderStatic = fixtureMode || !VisionCameraComponent || !hasPermission;
-
-  return (
-    <View style={styles.container} onLayout={handleLayout}>
-      {shouldRenderStatic ? (
+  // If user explicitly toggled virtual board:
+  if (showVirtualBoard) {
+    return (
+      <View style={styles.container} onLayout={handleLayout}>
         <View style={styles.fixtureWrapper}>
           <BreadboardGraphic
             width={Math.max(280, dimensions.width - 32)}
             height={Math.max(200, dimensions.height - 80)}
           />
-          <View style={styles.fixtureBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.fixtureBadgeText}>FIXTURE PREVIEW (CALIBRATED)</Text>
-          </View>
         </View>
+
+        {/* Mode Switcher Pill */}
+        <Pressable
+          style={styles.modeTogglePill}
+          onPress={() => setShowVirtualBoard(false)}
+        >
+          <Ionicons name="camera-outline" size={14} color="#38BDF8" />
+          <Text style={styles.modeToggleText}>SWITCH TO LIVE CAMERA</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // If camera permission is not yet granted:
+  if (!permission?.granted) {
+    return (
+      <View style={styles.container} onLayout={handleLayout}>
+        <View style={styles.permissionCard}>
+          <Ionicons name="videocam-outline" size={36} color={theme.color.accent} />
+          <Text style={styles.permissionTitle}>Camera Access Required</Text>
+          <Text style={styles.permissionDesc}>
+            Enable the camera to track your physical breadboard and overlay real-time AR circuit guidance.
+          </Text>
+          <Pressable
+            style={styles.permissionBtn}
+            onPress={requestPermission}
+          >
+            <Text style={styles.permissionBtnText}>Enable Live Camera</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.switchVirtualLink}
+            onPress={() => setShowVirtualBoard(true)}
+          >
+            <Text style={styles.switchVirtualLinkText}>Or use Virtual Breadboard</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // Live Camera Render
+  return (
+    <View style={styles.container} onLayout={handleLayout}>
+      {VisionCameraComponent && useCameraDeviceHook ? (
+        <VisionCameraComponent
+          style={StyleSheet.absoluteFill}
+          isActive={isActive && isFocused}
+          device={useCameraDeviceHook('back')}
+        />
       ) : (
-        <View style={styles.nativeCameraWrapper}>
-          {/* Native Vision Camera */}
-          {VisionCameraComponent && (
-            <VisionCameraComponent
-              style={StyleSheet.absoluteFill}
-              isActive={isActive && isFocused}
-              device={useCameraDeviceHook ? useCameraDeviceHook('back') : undefined}
-            />
-          )}
-        </View>
+        <ExpoCameraView
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          active={isActive && isFocused}
+        />
       )}
+
+      {/* Mode Switcher Pill */}
+      <Pressable
+        style={styles.modeTogglePill}
+        onPress={() => setShowVirtualBoard(true)}
+      >
+        <View style={styles.liveDot} />
+        <Text style={styles.modeToggleText}>LIVE CAMERA (Tap for Virtual)</Text>
+      </Pressable>
     </View>
   );
 }
@@ -112,18 +138,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.space.md,
   },
-  fixtureBadge: {
+  modeTogglePill: {
     position: 'absolute',
     bottom: theme.space.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(14, 17, 22, 0.85)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: 'rgba(14, 17, 22, 0.88)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: '#374151',
     gap: 6,
+    zIndex: 10,
   },
   liveDot: {
     width: 6,
@@ -131,13 +158,54 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: theme.color.pass,
   },
-  fixtureBadgeText: {
-    color: theme.color.textDim,
-    fontSize: 9,
+  modeToggleText: {
+    color: '#E2E8F0',
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
-  nativeCameraWrapper: {
-    ...StyleSheet.absoluteFill,
+  permissionCard: {
+    alignItems: 'center',
+    padding: theme.space.lg,
+    backgroundColor: theme.color.surface,
+    borderRadius: theme.radius.md,
+    marginHorizontal: theme.space.lg,
+    borderWidth: 1,
+    borderColor: '#2D3748',
+    gap: theme.space.xs,
+  },
+  permissionTitle: {
+    color: theme.color.text,
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: theme.space.xs,
+  },
+  permissionDesc: {
+    color: theme.color.textDim,
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginVertical: theme.space.xs,
+  },
+  permissionBtn: {
+    backgroundColor: theme.color.accent,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.sm,
+    borderRadius: theme.radius.sm,
+    marginTop: theme.space.xs,
+  },
+  permissionBtnText: {
+    color: theme.color.bg,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  switchVirtualLink: {
+    marginTop: theme.space.sm,
+    padding: 4,
+  },
+  switchVirtualLinkText: {
+    color: theme.color.textDim,
+    fontSize: 11,
+    textDecorationLine: 'underline',
   },
 });

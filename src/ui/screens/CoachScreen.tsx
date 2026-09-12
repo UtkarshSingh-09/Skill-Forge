@@ -155,7 +155,7 @@ export function CoachScreen() {
         {/* Sibling #1: Full-bleed CameraView */}
         <CameraView
           isActive={true}
-          fixtureMode={true}
+          fixtureMode={false}
         />
 
         {/* Sibling #2: Skia BoardOverlay (never a child of camera) */}

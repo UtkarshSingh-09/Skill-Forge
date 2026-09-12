@@ -7,7 +7,7 @@ import {
 } from '../contract/types';
 import defaultProcedure from '../contract/procedures/led_procedure.json';
 import { MOCK, MockFixtureKey } from '../ui/dev/MockPerception';
-import { evaluatePlaceholder } from '../engine/placeholderEngine';
+import { ProcedureEngine } from '../engine/procedureEngine';
 
 export interface AppState {
   procedure: Procedure | null;
@@ -73,8 +73,9 @@ export const useStore = create<AppState>((set, get) => ({
       // Small tick for realistic feedback feel (<200ms)
       await new Promise((resolve) => setTimeout(resolve, 250));
 
-      // 3. Call evaluate (placeholder engine until real engine lands)
-      const result = evaluatePlaceholder(obs, currentStep);
+      // 3. Call evaluate via ProcedureEngine (Part 11)
+      const engine = new ProcedureEngine(currentProcedure, state.stepIndex);
+      const result = engine.evaluate(obs);
 
       // 4. Update store state
       set({

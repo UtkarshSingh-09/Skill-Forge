@@ -1,0 +1,64 @@
+{
+  "timestamp": 1789192000000,
+  "boardDetected": true,
+  "handsClear": true,
+  "sceneStable": true,
+  "components": [
+    {
+      "type": "ic_7408",
+      "cells": ["E10", "F10"],
+      "confidence": 0.96,
+      "orientation": "STANDARD"
+    },
+    {
+      "type": "wire",
+      "cells": ["F10", "+rail"],
+      "confidence": 0.93,
+      "color": "red"
+    },
+    {
+      "type": "wire",
+      "cells": ["E16", "-rail"],
+      "confidence": 0.91,
+      "color": "black"
+    },
+    {
+      "type": "led",
+      "cells": ["D12", "D13"],
+      "confidence": 0.92,
+      "orientation": "STANDARD"
+    },
+    {
+      "type": "resistor",
+      "cells": ["C13", "C20"],
+      "confidence": 0.90
+    },
+    {
+      "type": "wire",
+      "cells": ["C20", "-rail"],
+      "confidence": 0.91,
+      "color": "black"
+    },
+    {
+      "type": "wire",
+      "cells": ["E10", "+rail"],
+      "confidence": 0.89,
+      "color": "yellow"
+    },
+    {
+      "type": "wire",
+      "cells": ["E11", "+rail"],
+      "confidence": 0.89,
+      "color": "yellow"
+    }
+  ],
+  "connections": [
+    { "from": "F10", "to": "+rail", "present": true, "confidence": 0.93 },
+    { "from": "E16", "to": "-rail", "present": true, "confidence": 0.91 },
+    { "from": "D12", "to": "E12", "present": true, "confidence": 0.95 },
+    { "from": "D13", "to": "C13", "present": true, "confidence": 0.94 },
+    { "from": "C20", "to": "-rail", "present": true, "confidence": 0.91 },
+    { "from": "E10", "to": "+rail", "present": true, "confidence": 0.89 },
+    { "from": "E11", "to": "+rail", "present": true, "confidence": 0.89 }
+  ]
+}

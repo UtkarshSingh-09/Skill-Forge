@@ -1,118 +1,21 @@
 {
-  "timestampMs": 1726113600000,
+  "timestamp": 1726117200000,
   "boardDetected": true,
-  "sceneStable": true,
   "handsClear": true,
-  "overallConfidence": 0.98,
-  "occupancy": {
-    "+rail_5": "resistor_220",
-    "E5": "resistor_220,led_anode",
-    "E6": "led_cathode,wire",
-    "-rail_6": "wire",
-    "+rail_1": "power_wire",
-    "-rail_1": "power_wire",
-    "E10": "ic_pin_14,wire",
-    "F10": "ic_pin_7",
-    "+rail_10": "wire",
-    "E16": "wire",
-    "E15": "wire",
-    "E14": "resistor_220",
-    "E18": "resistor_220"
-  },
+  "sceneStable": true,
   "components": [
     {
-      "id": "R1",
       "type": "resistor",
-      "cells": ["+rail_5", "E5"],
-      "colour": "brown-black-brown",
-      "orientation": "n/a",
-      "confidence": 0.98
-    },
-    {
-      "id": "D1",
-      "type": "led",
-      "cells": ["E5", "E6"],
-      "colour": "red",
-      "orientation": "anode_up",
-      "confidence": 0.98
-    },
-    {
-      "id": "W1",
-      "type": "wire",
-      "cells": ["E6", "-rail_6"],
-      "colour": "black",
-      "orientation": "n/a",
-      "confidence": 0.98
-    },
-    {
-      "id": "W2",
-      "type": "wire",
-      "cells": ["+rail_1", "-rail_1"],
-      "colour": "red",
-      "orientation": "n/a",
-      "confidence": 0.98
-    },
-    {
-      "id": "U1",
-      "type": "ic",
-      "cells": ["E10", "F10"],
-      "colour": "black",
-      "orientation": "notch_left",
-      "confidence": 0.98
-    },
-    {
-      "id": "W3",
-      "type": "wire",
-      "cells": ["+rail_10", "E10"],
-      "colour": "red",
-      "orientation": "n/a",
-      "confidence": 0.98
-    },
-    {
-      "id": "W4",
-      "type": "wire",
-      "cells": ["E16", "E15"],
-      "colour": "green",
-      "orientation": "n/a",
-      "confidence": 0.98
-    },
-    {
-      "id": "R2",
-      "type": "resistor",
-      "cells": ["E14", "E18"],
-      "colour": "brown-black-brown",
-      "orientation": "n/a",
-      "confidence": 0.98
+      "cells": ["D10", "D14"],
+      "confidence": 0.94
     }
   ],
   "connections": [
     {
-      "from": "+rail_5",
-      "to": "E5",
-      "expectedColour": null,
+      "from": "D10",
+      "to": "D14",
       "present": true,
-      "confidence": 0.98
-    },
-    {
-      "from": "E5",
-      "to": "E6",
-      "expectedColour": null,
-      "present": true,
-      "confidence": 0.98
-    },
-    {
-      "from": "E6",
-      "to": "-rail_6",
-      "expectedColour": null,
-      "present": true,
-      "confidence": 0.98
-    },
-    {
-      "from": "+rail_1",
-      "to": "-rail_1",
-      "expectedColour": null,
-      "present": true,
-      "confidence": 0.98
+      "confidence": 0.92
     }
   ]
 }

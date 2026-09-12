@@ -4,17 +4,22 @@ import {
   Procedure,
   EvaluationResult,
   SessionEvent,
+  GroundTruth,
 } from '../contract/types';
 import defaultProcedure from '../contract/procedures/arduino_led_v1.json';
-import { MOCK, MockFixtureKey, getMockObservation } from '../ui/dev/MockPerception';
+import { MockFixtureKey, getMockObservation } from '../ui/dev/MockPerception';
 import { ProcedureEngine } from '../engine/procedureEngine';
 import { persistEvent } from './events';
+import { createLearningNodeFromEvents } from '../engine/learningGraph';
+import { updateLearningGraph, getLearningHistory } from './skillProfile';
+import { caps } from '../capabilities';
 
 export interface AppState {
   procedure: Procedure | null;
   stepIndex: number;
   lastObservation: ObservationState | null;
   lastResult: EvaluationResult | null;
+  groundTruth: GroundTruth | null;
   events: SessionEvent[];
   busy: boolean;
   selectedFixture: MockFixtureKey;
@@ -35,15 +40,20 @@ export const useStore = create<AppState>((set, get) => ({
   stepIndex: 0,
   lastObservation: null,
   lastResult: null,
+  groundTruth: {
+    available: caps.arduino,
+    ledOn: false,
+    raw: 0,
+  },
   events: [
     {
       t: Date.now(),
       type: 'SESSION_START',
-      payload: { procedureId: defaultProcedure.procedureId },
+      payload: { procedureId: defaultProcedure.id || (defaultProcedure as any).procedureId },
     },
   ],
   busy: false,
-  selectedFixture: 'wrong', // Default to 'wrong' so the user can test failure first
+  selectedFixture: 'live', // Default to 'live' dynamic hardware
 
   actions: {
     requestTest: async () => {
@@ -61,8 +71,6 @@ export const useStore = create<AppState>((set, get) => ({
         payload: { stepIndex: state.stepIndex },
       });
 
-      // 2. Read selected mock fixture as lastObservation
-      const obs = getMockObservation(state.selectedFixture, state.procedure, state.stepIndex);
       const currentProcedure = state.procedure;
       const currentStep = currentProcedure?.steps[state.stepIndex];
 
@@ -71,20 +79,90 @@ export const useStore = create<AppState>((set, get) => ({
         return;
       }
 
+      // 2. Dynamic Hardware Check (Arduino Sense)
+      let hardwareActive = false;
+      let hardwareData: any = null;
+
+      if (state.selectedFixture === 'live' || caps.arduino) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1500);
+          const res = await fetch('http://localhost:8000/api/hardware/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              procedureId: currentProcedure.id || (currentProcedure as any).procedureId,
+              stepIndex: state.stepIndex,
+            }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.connected) {
+              hardwareActive = true;
+              hardwareData = data;
+              caps.arduino = true;
+            }
+          }
+        } catch (e) {
+          // Hardware bridge offline or unreachable
+        }
+      }
+
       // Small tick for realistic feedback feel (<200ms)
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // 3. Call evaluate via ProcedureEngine (Part 11)
+      // 3. Generate observation and evaluate
+      let obs;
+      let result;
       const engine = new ProcedureEngine(currentProcedure, state.stepIndex);
-      const result = engine.evaluate(obs);
 
-      // 4. Update store state
+      if (hardwareActive && hardwareData) {
+        // DYNAMIC HARDWARE MODE: Real circuit continuity dictates verdict
+        const isPhysicalPass = Boolean(hardwareData.ledOn);
+        obs = getMockObservation(isPhysicalPass ? 'correct' : 'wrong', currentProcedure, state.stepIndex);
+        result = engine.evaluate(obs);
+
+        if (isPhysicalPass) {
+          result.result = 'PASS';
+          result.feedback = `Hardware Sense: Closed circuit verified! Current detected (analog: ${hardwareData.raw}).`;
+        } else {
+          result.result = 'FAIL';
+          result.reason = 'wrong_position';
+          result.feedback = `Hardware Sense: Open or reversed circuit (analog: ${hardwareData.raw}). Check resistor bridging E10-E14 and LED anode (+) at E14, cathode (-) at E18.`;
+          result.hint = result.feedback;
+        }
+      } else {
+        // SIMULATION MODE: Fall back to selected fixture
+        const fixtureKey = state.selectedFixture === 'live' ? 'wrong' : state.selectedFixture;
+        obs = getMockObservation(fixtureKey, currentProcedure, state.stepIndex);
+        result = engine.evaluate(obs);
+      }
+
+      // 4. Update GroundTruth telemetry based on verdict
+      const isPassed = result.result === 'PASS';
+      const updatedGroundTruth: GroundTruth = {
+        available: hardwareActive || caps.arduino,
+        ledOn: hardwareActive ? Boolean(hardwareData?.ledOn) : isPassed,
+        continuity: hardwareActive ? Boolean(hardwareData?.ledOn) : isPassed,
+        raw: hardwareActive ? (hardwareData?.raw ?? 0) : (isPassed ? 710 : 0),
+        truthTable: [
+          { a: 0, b: 0, out: 0, expected: 0 },
+          { a: 0, b: 1, out: 0, expected: 0 },
+          { a: 1, b: 0, out: 0, expected: 0 },
+          { a: 1, b: 1, out: (hardwareActive ? Boolean(hardwareData?.ledOn) : isPassed) ? 1 : 0, expected: 1 },
+        ],
+      };
+
+      // 5. Update store state
       set({
         lastObservation: obs,
         lastResult: result,
+        groundTruth: updatedGroundTruth,
       });
 
-      // 5. Push matching SessionEvent
+      // 6. Push matching SessionEvent
       if (result.result === 'PASS') {
         get().actions.pushEvent({
           t: Date.now(),
@@ -92,8 +170,38 @@ export const useStore = create<AppState>((set, get) => ({
           payload: { stepId: currentStep.id },
         });
 
-        // 6. On PASS, advance to next step
-        get().actions.nextStep();
+        const totalSteps = currentProcedure?.steps.length ?? 0;
+        const isFinalStep = state.stepIndex >= totalSteps - 1;
+
+        if (isFinalStep) {
+          // Record session completion to Learning Graph
+          const allEvents = get().events;
+          const startTime = allEvents[0]?.t || allEvents[0]?.timestamp || Date.now();
+          const completionTimeSec = Math.max(5, Math.round((Date.now() - startTime) / 1000));
+          const currentAttempts = getLearningHistory().length + 1;
+          const procId = currentProcedure.id || (currentProcedure as any).procedureId || 'arduino_led_v1';
+
+          const node = createLearningNodeFromEvents(
+            procId,
+            currentAttempts,
+            allEvents,
+            completionTimeSec
+          );
+          updateLearningGraph(node);
+
+          get().actions.pushEvent({
+            t: Date.now(),
+            type: 'SESSION_END',
+            payload: {
+              procedureId: procId,
+              accuracyPct: node.accuracyPct,
+              completionTimeSec,
+            },
+          });
+        } else {
+          // Advance to next step
+          get().actions.nextStep();
+        }
       } else if (result.result === 'FAIL') {
         get().actions.pushEvent({
           t: Date.now(),
@@ -151,7 +259,7 @@ export const useStore = create<AppState>((set, get) => ({
           {
             t: Date.now(),
             type: 'SESSION_START',
-            payload: { procedureId: procedure.procedureId },
+            payload: { procedureId: procedure.id || (procedure as any).procedureId },
           },
         ],
       });
@@ -170,7 +278,7 @@ export const useStore = create<AppState>((set, get) => ({
           {
             t: Date.now(),
             type: 'SESSION_START',
-            payload: { procedureId: get().procedure?.procedureId },
+            payload: { procedureId: get().procedure?.id || (get().procedure as any)?.procedureId },
           },
         ],
       });

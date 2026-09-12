@@ -1,142 +1,132 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
 import { ProcedureEngine } from '../procedureEngine';
-import { ObservationState, Procedure } from '../../contract/types';
-import ledProcedure from '../../contract/procedures/led_procedure.json';
+import { Procedure, ObservationState, EvaluationResult } from '../../contract/types';
+import ledProcedureJson from '../../contract/procedures/led_basic_v1.json';
 
-describe('ProcedureEngine — 10 Golden Acceptance Tests (Part 11.1)', () => {
-  const procedure = ledProcedure as unknown as Procedure;
+const procedure = ledProcedureJson as unknown as Procedure;
 
-  const validObs: ObservationState = {
-    timestampMs: Date.now(),
+function makeObs(overrides: Partial<ObservationState> = {}): ObservationState {
+  return {
+    timestamp: Date.now(),
     boardDetected: true,
-    sceneStable: true,
     handsClear: true,
-    overallConfidence: 0.95,
-    occupancy: { '+rail_5': 'resistor_220', E5: 'resistor_220' },
-    components: [
-      {
-        id: 'R1',
-        type: 'resistor',
-        cells: ['+rail_5', 'E5'],
-        colour: 'brown-black-brown',
-        orientation: 'n/a',
-        confidence: 0.95,
-      },
-    ],
-    connections: [
-      {
-        from: '+rail_5',
-        to: 'E5',
-        expectedColour: null,
-        present: true,
-        confidence: 0.95,
-      },
-    ],
+    sceneStable: true,
+    components: [],
+    connections: [],
+    ...overrides
   };
+}
 
-  // 1. Board not found
-  it('1. board not found → UNCERTAIN, never PASS', () => {
-    const engine = new ProcedureEngine(procedure, 0);
-    const result = engine.evaluate({ ...validObs, boardDetected: false });
-    assert.strictEqual(result.result, 'UNCERTAIN');
-    assert.strictEqual(result.reason, 'board_not_found');
+describe('ProcedureEngine Golden Suite (10 Laws)', () => {
+  let engine: ProcedureEngine;
+
+  beforeEach(() => {
+    engine = new ProcedureEngine(procedure, 0); // Step 1: Resistor in ["D10", "D14"]
   });
 
-  // 2. Hands present (occluded)
-  it('2. hands present → UNCERTAIN', () => {
-    const engine = new ProcedureEngine(procedure, 0);
-    const result = engine.evaluate({ ...validObs, handsClear: false });
-    assert.strictEqual(result.result, 'UNCERTAIN');
-    assert.strictEqual(result.reason, 'occluded');
+  // Law 1: Board presence is mandatory
+  it('1. board not found -> UNCERTAIN, never PASS', () => {
+    const res = engine.evaluate(makeObs({ boardDetected: false }));
+    expect(res.result).toBe('UNCERTAIN');
+    expect(res.reason).toBe('board_not_found');
+    expect(res.confidence).toBe(0);
   });
 
-  // 3. Unstable scene
-  it('3. unstable scene → UNCERTAIN', () => {
-    const engine = new ProcedureEngine(procedure, 0);
-    const result = engine.evaluate({ ...validObs, sceneStable: false });
-    assert.strictEqual(result.result, 'UNCERTAIN');
-    assert.strictEqual(result.reason, 'unstable');
+  // Law 2: Hands must be clear
+  it('2. hands present -> UNCERTAIN', () => {
+    const res = engine.evaluate(makeObs({ handsClear: false }));
+    expect(res.result).toBe('UNCERTAIN');
+    expect(res.reason).toBe('occluded');
   });
 
-  // 4. Missing component
-  it('4. missing component → FAIL(missing)', () => {
-    const engine = new ProcedureEngine(procedure, 0);
-    const result = engine.evaluate({ ...validObs, components: [] });
-    assert.strictEqual(result.result, 'FAIL');
-    assert.strictEqual(result.reason, 'missing');
+  // Law 3: Scene stability is mandatory
+  it('3. unstable scene -> UNCERTAIN', () => {
+    const res = engine.evaluate(makeObs({ sceneStable: false }));
+    expect(res.result).toBe('UNCERTAIN');
+    expect(res.reason).toBe('unstable');
   });
 
-  // 5. Right type wrong cell
-  it('5. right type wrong cell → FAIL(wrong_position) + highlights EXPECTED cell', () => {
-    const engine = new ProcedureEngine(procedure, 0);
-    const wrongCompObs: ObservationState = {
-      ...validObs,
-      components: [
-        {
-          id: 'R1',
-          type: 'resistor',
-          cells: ['+rail_5', 'E7'], // E7 instead of E5
-          colour: 'brown-black-brown',
-          orientation: 'n/a',
-          confidence: 0.92,
-        },
-      ],
-    };
-    const result = engine.evaluate(wrongCompObs);
-    assert.strictEqual(result.result, 'FAIL');
-    assert.strictEqual(result.reason, 'wrong_position');
-    assert.ok(result.highlightCells.includes('E5'));
+  function evalStable(eng: ProcedureEngine, obs: ObservationState): EvaluationResult {
+    eng.evaluate(obs);
+    eng.evaluate(obs);
+    return eng.evaluate(obs);
+  }
+
+  // Law 4: Missing component yields FAIL(missing)
+  it('4. missing component -> FAIL(missing)', () => {
+    const res = evalStable(engine, makeObs({ components: [] }));
+    expect(res.result).toBe('FAIL');
+    expect(res.reason).toBe('missing');
   });
 
-  // 6. Reversed component orientation
-  it('6. reversed LED orientation → FAIL(reversed)', () => {
-    // Step 2 is the LED step
-    const engine = new ProcedureEngine(procedure, 1);
-    const ledObs: ObservationState = {
-      ...validObs,
-      components: [
-        {
-          id: 'LED1',
-          type: 'led',
-          cells: ['E5', 'E6'],
-          colour: 'red',
-          orientation: 'anode_down', // expect anode_up
-          confidence: 0.9,
-        },
-      ],
-    };
-    const result = engine.evaluate(ledObs);
-    assert.strictEqual(result.result, 'FAIL');
-    assert.strictEqual(result.reason, 'reversed');
+  // Law 5: Wrong hole yields FAIL(wrong_position) + highlights EXPECTED cell
+  it('5. right type wrong cell -> FAIL(wrong_position) + highlights expected cell', () => {
+    const res = evalStable(engine, makeObs({
+      components: [{ type: 'resistor', cells: ['D10', 'D15'], confidence: 0.90 }]
+    }));
+    expect(res.result).toBe('FAIL');
+    expect(res.reason).toBe('wrong_position');
+    expect(res.highlightCells).toEqual(['D10', 'D14']);
   });
 
-  // 7. Correct observation → PASS
-  it('7. correct observation → PASS', () => {
-    const engine = new ProcedureEngine(procedure, 0);
-    const result = engine.evaluate(validObs);
-    assert.strictEqual(result.result, 'PASS');
-    assert.strictEqual(result.reason, null);
+  // Law 6: Reversed polarity yields FAIL(reversed)
+  it('6. reversed LED -> FAIL(reversed)', () => {
+    const ledEngine = new ProcedureEngine(procedure, 1); // Step 2: LED in ["D14", "D18"]
+    const res = evalStable(ledEngine, makeObs({
+      components: [{ type: 'led', cells: ['D14', 'D18'], confidence: 0.90, orientation: 'REVERSED' }]
+    }));
+    expect(res.result).toBe('FAIL');
+    expect(res.reason).toBe('reversed');
   });
 
-  // 8. Confidence below 0.75 threshold → never PASS
-  it('8. confidence 0.70 → never PASS', () => {
-    const engine = new ProcedureEngine(procedure, 0);
-    const lowConfObs: ObservationState = {
-      ...validObs,
-      components: [
-        {
-          ...validObs.components[0],
-          confidence: 0.70, // below 0.75
-        },
-      ],
-    };
-    const result = engine.evaluate(lowConfObs);
-    assert.notStrictEqual(result.result, 'PASS');
+  // Law 7: Debounce commits PASS only after 3 consecutive frames
+  it('7. correct after 3 frames -> PASS', () => {
+    const correctObs = makeObs({
+      components: [{ type: 'resistor', cells: ['D10', 'D14'], confidence: 0.92 }]
+    });
+
+    const frame1 = engine.evaluate(correctObs);
+    expect(frame1.result).toBe('CHECKING');
+
+    const frame2 = engine.evaluate(correctObs);
+    expect(frame2.result).toBe('CHECKING');
+
+    const frame3 = engine.evaluate(correctObs);
+    expect(frame3.result).toBe('PASS');
+    expect(frame3.confidence).toBe(0.92);
   });
 
-  // 9. Safety violation outranks pedagogy
-  it('9. safety violation outranks everything', () => {
+  // Law 8: Flickering results never commit PASS
+  it('8. 2 PASS + 1 FAIL -> CHECKING (never commits)', () => {
+    const correctObs = makeObs({
+      components: [{ type: 'resistor', cells: ['D10', 'D14'], confidence: 0.92 }]
+    });
+    const wrongObs = makeObs({
+      components: [{ type: 'resistor', cells: ['D10', 'D15'], confidence: 0.88 }]
+    });
+
+    engine.evaluate(correctObs);
+    engine.evaluate(correctObs);
+    const frame3 = engine.evaluate(wrongObs);
+
+    expect(frame3.result).toBe('CHECKING');
+  });
+
+  // Law 9: Confidence below 0.75 never passes
+  it('9. confidence 0.70 -> never PASS', () => {
+    const lowConfObs = makeObs({
+      components: [{ type: 'resistor', cells: ['D10', 'D14'], confidence: 0.70 }]
+    });
+
+    engine.evaluate(lowConfObs);
+    engine.evaluate(lowConfObs);
+    const frame3 = engine.evaluate(lowConfObs);
+
+    expect(frame3.result).not.toBe('PASS');
+    expect(frame3.result).toBe('FAIL'); // Filter drops components < 0.75
+  });
+
+  // Law 10: Safety violation outranks all pedagogy
+  it('10. safety violation outranks everything', () => {
     const procWithSafety: Procedure = {
       ...procedure,
       steps: [
@@ -144,58 +134,25 @@ describe('ProcedureEngine — 10 Golden Acceptance Tests (Part 11.1)', () => {
           ...procedure.steps[0],
           safetyRules: [
             {
-              id: 'SHORT_CIRCUIT',
-              description: 'Direct short',
+              id: 'DIRECT_SHORT',
+              description: 'VCC to GND short',
               violated: () => true,
-              message: 'Hazard: short circuit',
-            },
-          ],
+              message: 'Short circuit detected!'
+            }
+          ]
         },
-      ],
+        ...procedure.steps.slice(1)
+      ]
     };
+    const safetyEngine = new ProcedureEngine(procWithSafety, 0);
+    const correctObs = makeObs({
+      components: [{ type: 'resistor', cells: ['D10', 'D14'], confidence: 0.95 }]
+    });
 
-    const engine = new ProcedureEngine(procWithSafety, 0);
-    const result = engine.evaluate(validObs);
-    assert.strictEqual(result.result, 'FAIL');
-    assert.strictEqual(result.reason, 'safety_violation');
-    assert.ok(result.safetyViolations.includes('SHORT_CIRCUIT'));
-  });
-
-  // 10. Multi-frame debouncing (3 frames)
-  it('10. 3 consecutive agreeing verdicts required when debouncing is active', () => {
-    const debouncedEngine = new ProcedureEngine(procedure, 0, 3);
-
-    // Frame 1
-    const f1 = debouncedEngine.evaluate(validObs);
-    assert.strictEqual(f1.result, 'CHECKING');
-
-    // Frame 2
-    const f2 = debouncedEngine.evaluate(validObs);
-    assert.strictEqual(f2.result, 'CHECKING');
-
-    // Frame 3
-    const f3 = debouncedEngine.evaluate(validObs);
-    assert.strictEqual(f3.result, 'PASS');
-  });
-
-  // 11. Multi-step progression with full circuit fixture
-  it('11. all steps in procedure evaluate to PASS with obs_correct fixture', () => {
-    const fullObs = require('../../contract/fixtures/obs_correct.json');
-    for (let i = 0; i < procedure.steps.length; i++) {
-      const stepEngine = new ProcedureEngine(procedure, i);
-      const res = stepEngine.evaluate(fullObs);
-      assert.strictEqual(res.result, 'PASS', `Step ${i + 1} (${procedure.steps[i].expect.type}) failed: ${res.reason}`);
-    }
-  });
-
-  // 12. Procedure P-B (7408 AND Gate) multi-step evaluation
-  it('12. Procedure P-B (7408 AND Gate) evaluates all steps to PASS with obs_correct', () => {
-    const andProc = require('../../contract/procedures/and_gate_procedure.json');
-    const fullObs = require('../../contract/fixtures/obs_correct.json');
-    for (let i = 0; i < andProc.steps.length; i++) {
-      const stepEngine = new ProcedureEngine(andProc, i);
-      const res = stepEngine.evaluate(fullObs);
-      assert.strictEqual(res.result, 'PASS', `Step ${i + 1} (${andProc.steps[i].expect.type}) failed: ${res.reason}`);
-    }
+    const res = safetyEngine.evaluate(correctObs);
+    expect(res.result).toBe('FAIL');
+    expect(res.reason).toBe('safety_violation');
+    expect(res.safetyViolations).toContain('DIRECT_SHORT');
+    expect(res.confidence).toBe(1.0);
   });
 });

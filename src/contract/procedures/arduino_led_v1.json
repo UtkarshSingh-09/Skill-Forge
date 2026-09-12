@@ -1,71 +1,91 @@
 {
-  "procedureId": "P-ARDUINO-LED",
-  "title": "Arduino Powered LED",
-  "description": "5V Arduino USB powered circuit with 1kΩ current limiter and LED verification",
-  "difficulty": "Beginner",
-  "estimatedTimeMinutes": 3,
+  "id": "arduino_led_v1",
+  "title": "Arduino Uno + LED Circuit (Digital Pin D7)",
+  "description": "Construct and verify an Arduino-controlled LED circuit: D7 digital drive pin, 1k current-limiting resistor, LED, and ground return rail.",
+  "version": "1.0.0",
   "steps": [
     {
-      "id": 1,
-      "instruction": "Place 1kΩ resistor between hole E10 and hole E14",
+      "id": "step_1_resistor",
+      "title": "Place Current-Limiting Resistor",
+      "instruction": "Insert the 1k ohm resistor into rows E10 and E14.",
       "expect": {
         "type": "resistor",
         "cells": ["E10", "E14"]
       },
       "hints": {
-        "missing": "Insert the 1kΩ resistor with leads spanning E10 to E14.",
-        "wrong_position": "Wrong row — move one lead to E10 and other to E14.",
-        "occluded": "Move your hands away, then press TEST."
+        "missing": "Place the 1k ohm resistor on the board between holes E10 and E14.",
+        "wrong_position": "Move the resistor so its legs connect to rows E10 and E14."
       }
     },
     {
-      "id": 2,
-      "instruction": "Insert LED: long leg (anode) in E14, short leg (cathode) in E18",
+      "id": "step_2_led",
+      "title": "Place the LED in Series",
+      "instruction": "Insert the LED: Anode (longer leg) in E14, Cathode (shorter leg) in E18.",
       "expect": {
         "type": "led",
         "cells": ["E14", "E18"],
-        "orientation": "anode_up"
+        "orientation": "STANDARD"
       },
       "hints": {
-        "missing": "Insert LED with longer lead (anode) sharing row E14 with resistor.",
-        "reversed": "Reverse the LED: long lead must connect to E14 (+5V side).",
-        "wrong_position": "Move the LED cathode (short lead) to row E18."
+        "missing": "Insert the LED into holes E14 and E18.",
+        "wrong_position": "Check LED holes: long leg (anode) in E14, short leg (cathode) in E18.",
+        "reversed": "Reverse the LED: the longer leg (anode) must connect to the resistor at E14."
       }
     },
     {
-      "id": 3,
-      "instruction": "Connect yellow jumper wire from Arduino Pin D7 to hole E10",
+      "id": "step_3_vcc_rail",
+      "title": "Connect Arduino 5V to Power Rail",
+      "instruction": "Connect a red wire from Arduino 5V pin to the breadboard (+) power rail.",
       "expect": {
         "type": "wire",
-        "cells": ["E10", "+rail_10"]
+        "cells": ["Arduino_5V", "+rail"],
+        "color": "red"
       },
       "hints": {
-        "missing": "Run the yellow wire from Arduino digital pin 7 into hole E10.",
-        "wrong_position": "Check connection: wire must enter hole E10 to power the resistor."
+        "missing": "Connect a red wire from Arduino 5V pin to the (+) power rail.",
+        "wrong_position": "One end of the red wire must be in Arduino 5V, the other in the (+) rail."
       }
     },
     {
-      "id": 4,
-      "instruction": "Connect jumper wire from hole E18 to the negative ground rail (-)",
+      "id": "step_4_gnd_rail",
+      "title": "Connect Arduino GND to Ground Rail",
+      "instruction": "Connect a black wire from Arduino GND pin to the breadboard (-) ground rail.",
       "expect": {
         "type": "wire",
-        "cells": ["E18", "-rail_18"]
+        "cells": ["Arduino_GND", "-rail"],
+        "color": "black"
       },
       "hints": {
-        "missing": "Add a return path wire connecting E18 to the ground rail.",
-        "wrong_position": "Connect E18 directly to the ground (-) blue rail."
+        "missing": "Connect a black wire from Arduino GND pin to the (-) ground rail.",
+        "wrong_position": "One end of the black wire must be in Arduino GND, the other in the (-) rail."
       }
     },
     {
-      "id": 5,
-      "instruction": "Connect black wire from Arduino GND pin to breadboard ground rail (-)",
+      "id": "step_5_control_wire",
+      "title": "Connect Arduino D7 Control Signal",
+      "instruction": "Connect a yellow wire from Arduino digital pin D7 to breadboard row E10.",
       "expect": {
         "type": "wire",
-        "cells": ["-rail_1", "-rail_18"]
+        "cells": ["Arduino_D7", "E10"],
+        "color": "yellow"
       },
       "hints": {
-        "missing": "Connect Arduino GND pin to breadboard (-) rail to complete circuit ground.",
-        "safety_violation": "Short circuit! Do not bridge 5V directly to ground."
+        "missing": "Connect a yellow wire from Arduino pin D7 to row E10.",
+        "wrong_position": "Ensure one end is plugged into Arduino D7 and the other into row E10."
+      }
+    },
+    {
+      "id": "step_6_ground_return",
+      "title": "Close Ground Return Loop",
+      "instruction": "Connect a jumper wire from row E18 to the breadboard (-) ground rail.",
+      "expect": {
+        "type": "wire",
+        "cells": ["E18", "-rail"],
+        "color": "black"
+      },
+      "hints": {
+        "missing": "Connect a jumper wire from row E18 to the (-) ground rail.",
+        "wrong_position": "One end of the jumper must be in row E18, the other in the (-) ground rail."
       }
     }
   ]

@@ -1,0 +1,61 @@
+{
+  "procedureId": "P-LED",
+  "title": "Light an LED",
+  "description": "Basic breadboard circuit with current-limiting resistor and LED",
+  "difficulty": "Beginner",
+  "estimatedTimeMinutes": 3,
+  "steps": [
+    {
+      "id": 1,
+      "instruction": "Place the 220Ω resistor from +5V rail to hole E5",
+      "expect": {
+        "type": "resistor",
+        "cells": ["+rail_5", "E5"]
+      },
+      "hints": {
+        "missing": "Insert the 220Ω resistor between +5V and E5.",
+        "wrong_position": "Wrong hole — move to E5",
+        "occluded": "Move your hands, then TEST",
+        "board_not_found": "Align the board in view"
+      }
+    },
+    {
+      "id": 2,
+      "instruction": "Insert LED: long leg (anode) in E5, short leg (cathode) in E6",
+      "expect": {
+        "type": "led",
+        "cells": ["E5", "E6"],
+        "orientation": "anode_up"
+      },
+      "hints": {
+        "missing": "Insert the LED with the longer leg in E5.",
+        "reversed": "Flip it — tagged leg up",
+        "wrong_position": "Move the LED cathode to row E6."
+      }
+    },
+    {
+      "id": 3,
+      "instruction": "Connect jumper wire from hole E6 to GND rail (-)",
+      "expect": {
+        "type": "wire",
+        "cells": ["E6", "-rail_6"]
+      },
+      "hints": {
+        "missing": "Add a wire connecting E6 to the ground rail.",
+        "wrong_position": "Move the wire to connect E6 to ground."
+      }
+    },
+    {
+      "id": 4,
+      "instruction": "Connect 5V power supply to the + and - rails",
+      "expect": {
+        "type": "wire",
+        "cells": ["+rail_1", "-rail_1"]
+      },
+      "hints": {
+        "missing": "Connect your power leads to activate the circuit.",
+        "safety_violation": "Power rail bridged directly to ground! Remove bridge immediately."
+      }
+    }
+  ]
+}

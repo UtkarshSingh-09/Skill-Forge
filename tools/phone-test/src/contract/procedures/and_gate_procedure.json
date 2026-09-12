@@ -1,0 +1,59 @@
+{
+  "procedureId": "P-AND",
+  "title": "7408 AND Gate Circuit",
+  "description": "Dual-input TTL logic gate with LED truth table verification",
+  "difficulty": "Intermediate",
+  "estimatedTimeMinutes": 8,
+  "steps": [
+    {
+      "id": 1,
+      "instruction": "Insert 7408 IC spanning center trough with pin 1 notch facing left (rows E10-F10)",
+      "expect": {
+        "type": "ic",
+        "cells": ["E10", "F10"],
+        "orientation": "notch_left"
+      },
+      "hints": {
+        "missing": "Place the 7408 quad AND gate IC across the center divider trough.",
+        "wrong_position": "Align pin 1 with row 10 spanning the center trough.",
+        "reversed": "Flip the IC: notch must face towards column 1 (left)."
+      }
+    },
+    {
+      "id": 2,
+      "instruction": "Connect VCC (Pin 14 / row E10) to +5V rail and GND (Pin 7 / row F16) to ground (-)",
+      "expect": {
+        "type": "wire",
+        "cells": ["+rail_10", "E10"]
+      },
+      "hints": {
+        "missing": "Add power wire from +5V to IC pin 14 (row E10).",
+        "safety_violation": "Power pin reversed! Check VCC vs GND pins."
+      }
+    },
+    {
+      "id": 3,
+      "instruction": "Connect logic inputs A and B to Pins 1 & 2 (rows E16 & E15)",
+      "expect": {
+        "type": "wire",
+        "cells": ["E16", "E15"]
+      },
+      "hints": {
+        "missing": "Connect input jumpers to gate 1 inputs on pins 1 and 2.",
+        "wrong_position": "Ensure inputs are connected to rows E15 and E16."
+      }
+    },
+    {
+      "id": 4,
+      "instruction": "Connect output (Pin 3 / row E14) through 220Ω resistor to LED anode",
+      "expect": {
+        "type": "resistor",
+        "cells": ["E14", "E18"]
+      },
+      "hints": {
+        "missing": "Insert 220Ω resistor between output pin 3 and LED anode.",
+        "wrong_position": "Move resistor to row E14."
+      }
+    }
+  ]
+}

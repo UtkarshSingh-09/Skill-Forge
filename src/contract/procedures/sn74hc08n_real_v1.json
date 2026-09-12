@@ -1,0 +1,92 @@
+{
+  "id": "sn74hc08n_real_v1",
+  "title": "SN74HC08N Quad 2-Input AND Gate Hardware Verification",
+  "description": "Construct and test a live SN74HC08N CMOS logic circuit using exact physical components: 1k resistor, red LED, battery/power supply, and jumper wires.",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": "step_1_ic_placement",
+      "title": "Insert SN74HC08N IC Across Center Channel",
+      "instruction": "Push the 14-pin SN74HC08N across the center divider gap: Pin 1 in E10, Pin 7 in E16, Pin 14 in F10. Notch facing left toward column 1.",
+      "expect": {
+        "type": "ic_7408",
+        "cells": ["E10", "F10"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Seat the 14-pin SN74HC08N chip straddling the center divider gap.",
+        "wrong_position": "Ensure Pin 1 is at E10 and Pin 14 is at F10. Both rows of pins must straddle the center channel.",
+        "reversed": "Check the orientation: the notch/dot must point left toward column 1."
+      }
+    },
+    {
+      "id": "step_2_ic_power",
+      "title": "Wire IC Power (+VCC) and Ground (GND)",
+      "instruction": "Connect Pin 14 (F10) to the (+) power rail with a red wire, and Pin 7 (E16) to the (-) ground rail with a black wire.",
+      "expect": {
+        "type": "wire",
+        "cells": ["F10", "+rail"],
+        "color": "red"
+      },
+      "hints": {
+        "missing": "Connect Pin 14 (F10) to (+) rail and Pin 7 (E16) to (-) rail.",
+        "wrong_position": "Red jumper must connect F10 (Pin 14) directly to the (+) power rail."
+      }
+    },
+    {
+      "id": "step_3_output_indicator",
+      "title": "Insert Output Indicator LED (Gate 1 Output)",
+      "instruction": "Insert the red LED: Anode (longer leg) in D12 (connected internally to Pin 3 at E12), and Cathode (shorter leg) in D13.",
+      "expect": {
+        "type": "led",
+        "cells": ["D12", "D13"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Insert the red LED into holes D12 and D13.",
+        "wrong_position": "LED anode must be in D12 (sharing column 12 with Pin 3) and cathode in D13.",
+        "reversed": "Reverse the LED: the longer leg (anode) must face D12 toward Pin 3."
+      }
+    },
+    {
+      "id": "step_4_current_limiter",
+      "title": "Place 1k Resistor & Ground Return",
+      "instruction": "Insert the 1k resistor (Brown-Black-Red-Gold): one leg in C13 (connected to LED cathode) and the other in C20. Connect C20 to (-) rail with a jumper.",
+      "expect": {
+        "type": "resistor",
+        "cells": ["C13", "C20"]
+      },
+      "hints": {
+        "missing": "Place the 1k resistor between hole C13 and C20.",
+        "wrong_position": "Resistor must connect column 13 (LED cathode) to column 20."
+      }
+    },
+    {
+      "id": "step_5_input_jumpers",
+      "title": "Wire Input Jumpers (1A & 1B)",
+      "instruction": "Insert two input jumper wires into E10 (Pin 1 / 1A) and E11 (Pin 2 / 1B). The free ends will be connected to (+) or (-) rails (or Arduino D2/D3).",
+      "expect": {
+        "type": "wire",
+        "cells": ["E10", "+rail"],
+        "color": "yellow"
+      },
+      "hints": {
+        "missing": "Insert input jumpers into E10 (Pin 1) and E11 (Pin 2).",
+        "wrong_position": "Input A jumper must seat in hole E10, and Input B jumper in E11."
+      }
+    },
+    {
+      "id": "step_6_truth_table_verify",
+      "title": "Verify SN74HC08N AND Gate Truth Table",
+      "instruction": "Apply 0s and 1s to inputs 1A and 1B. Verify LED is OFF for (0,0), (0,1), (1,0) and turns ON only for (1,1).",
+      "expect": {
+        "type": "ic_7408",
+        "cells": ["E10", "F10"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Verify all connections are secure before running the electrical truth table test."
+      }
+    }
+  ]
+}

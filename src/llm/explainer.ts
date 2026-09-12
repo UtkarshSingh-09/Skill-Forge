@@ -1,13 +1,114 @@
 import { EvaluationResult } from '../contract/types';
 import { caps } from '../capabilities';
 
+export interface LlmConfig {
+  host: string;
+  model: string;
+}
+
 /**
- * Ollama Host Configuration.
- * Note: When running on a physical phone, replace with your laptop's Wi-Fi IP address.
- * (e.g. "http://10.69.98.242:11434")
+ * Dynamic LLM Configuration.
+ * - On-device Termux / Android local Ollama: "http://127.0.0.1:11434" or "http://localhost:11434"
+ * - Laptop host via Wi-Fi: "http://10.69.98.242:11434" or custom LAN IP
  */
-const OLLAMA_HOST = 'http://10.69.98.242:11434';
-const OLLAMA_MODEL = 'qwen2.5:3b'; // or "qwen2-vl:2b"
+export const llmConfig: LlmConfig = {
+  host: 'http://127.0.0.1:11434',
+  model: 'qwen2.5:3b',
+};
+
+export function setLlmConfig(host?: string, model?: string) {
+  if (host && host.trim().length > 0) {
+    let cleanHost = host.trim();
+    if (!cleanHost.startsWith('http://') && !cleanHost.startsWith('https://')) {
+      cleanHost = `http://${cleanHost}`;
+    }
+    // Remove trailing slash
+    cleanHost = cleanHost.replace(/\/+$/, '');
+    llmConfig.host = cleanHost;
+  }
+  if (model && model.trim().length > 0) {
+    llmConfig.model = model.trim();
+  }
+}
+
+/**
+ * Tests live connection to the configured LLM / Ollama server.
+ */
+export async function testLlmConnection(): Promise<{
+  success: boolean;
+  message: string;
+  models?: string[];
+  latencyMs?: number;
+}> {
+  const start = Date.now();
+  const hostsToTry = [
+    llmConfig.host,
+    ...(llmConfig.host.includes('127.0.0.1') ? ['http://localhost:11434'] : []),
+  ];
+
+  for (const host of hostsToTry) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      // Check available models from Ollama /api/tags
+      const tagsRes = await fetch(`${host}/api/tags`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (tagsRes.ok) {
+        const data = await tagsRes.json();
+        const latencyMs = Date.now() - start;
+        const availableModels = (data.models || []).map((m: any) => m.name || m.model);
+        llmConfig.host = host; // Save the working host
+        return {
+          success: true,
+          message: `Connected! ${availableModels.length} models found (${latencyMs}ms)`,
+          models: availableModels,
+          latencyMs,
+        };
+      }
+    } catch (err: any) {
+      // Try next host
+    }
+  }
+
+  // If tags failed, try quick 1-token generation check
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const genRes = await fetch(`${llmConfig.host}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: llmConfig.model,
+        prompt: 'Hi',
+        stream: false,
+        options: { num_predict: 2 },
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (genRes.ok) {
+      const latencyMs = Date.now() - start;
+      return {
+        success: true,
+        message: `Connected to model "${llmConfig.model}" (${latencyMs}ms)`,
+        latencyMs,
+      };
+    }
+  } catch (err: any) {
+    // fall through
+  }
+
+  return {
+    success: false,
+    message: `Cannot reach LLM at ${llmConfig.host}. Ensure Ollama is running.`,
+  };
+}
 
 /**
  * Fallback domain explanations (Master Plan Part 14 / Rule D9).
@@ -50,13 +151,13 @@ In ONE short encouraging sentence (under 25 words), give a clear hint to fix it.
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second fail-safe timeout
 
-    const response = await fetch(`${OLLAMA_HOST}/api/generate`, {
+    const response = await fetch(`${llmConfig.host}/api/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: OLLAMA_MODEL,
+        model: llmConfig.model,
         prompt: prompt,
         stream: false,
         options: {

@@ -1,17 +1,25 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Share } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { useStore } from '../../session/store';
-import { exportSession } from '../../session/export';
+import { exportSession, uploadSessionToDashboard } from '../../session/export';
 
 export function SessionSummaryScreen() {
   const router = useRouter();
 
   const events = useStore((s) => s.events);
   const procedure = useStore((s) => s.procedure);
-  const { resetSession } = useStore((s) => s.actions);
+
+  const [syncStatus, setSyncStatus] = useState<{
+    loading: boolean;
+    message: string | null;
+    success?: boolean;
+  }>({
+    loading: false,
+    message: null,
+  });
 
   // Derive all metrics purely from the store's logged SessionEvents
   const stats = useMemo(() => {
@@ -27,8 +35,8 @@ export function SessionSummaryScreen() {
       };
     }
 
-    const startTime = events[0]?.t ?? Date.now();
-    const endTime = events[events.length - 1]?.t ?? Date.now();
+    const startTime = events[0]?.t || events[0]?.timestamp || Date.now();
+    const endTime = events[events.length - 1]?.t || events[events.length - 1]?.timestamp || Date.now();
     const durationSeconds = Math.max(1, Math.round((endTime - startTime) / 1000));
 
     const passEvents = events.filter((e) => e.type === 'PASS');
@@ -45,7 +53,7 @@ export function SessionSummaryScreen() {
     Object.entries(mistakeBreakdown).forEach(([reason, count]) => {
       if (count > maxCount) {
         maxCount = count;
-        if (reason === 'wrong_position') biggestWeakSpot = 'Wrong hole placement (E5 vs E7)';
+        if (reason === 'wrong_position') biggestWeakSpot = 'Wrong hole placement';
         else if (reason === 'reversed') biggestWeakSpot = 'Component polarity orientation';
         else if (reason === 'missing') biggestWeakSpot = 'Omitted component step';
         else if (reason === 'safety_violation') biggestWeakSpot = 'Direct power rail bridge';
@@ -86,6 +94,16 @@ export function SessionSummaryScreen() {
     } catch {
       // ignore
     }
+  };
+
+  const handleSyncToDashboard = async () => {
+    setSyncStatus({ loading: true, message: 'Syncing to Mentor Dashboard...' });
+    const result = await uploadSessionToDashboard(procedure, events);
+    setSyncStatus({
+      loading: false,
+      message: result.message,
+      success: result.success,
+    });
   };
 
   const handleDone = () => {
@@ -138,12 +156,11 @@ export function SessionSummaryScreen() {
         {/* Weak Spot Card */}
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <Ionicons name="analytics-outline" size={20} color={theme.color.accent} />
-            <Text style={styles.infoTitle}>Identified Focus Area</Text>
+            <Ionicons name="bulb-outline" size={18} color={theme.color.accent} />
+            <Text style={styles.infoTitle}>Analysis & Diagnostics</Text>
           </View>
-          <Text style={styles.weakSpotText}>{stats.biggestWeakSpot}</Text>
+          <Text style={styles.weakSpotText}>Primary Weak Spot: {stats.biggestWeakSpot}</Text>
 
-          {/* Breakdown if mistakes happened */}
           {Object.keys(stats.mistakeBreakdown).length > 0 && (
             <View style={styles.breakdownList}>
               {Object.entries(stats.mistakeBreakdown).map(([reason, count]) => (
@@ -163,9 +180,34 @@ export function SessionSummaryScreen() {
 
         {/* Action Buttons */}
         <View style={styles.buttonRow}>
+          {/* Direct Dashboard Sync Button */}
+          <Pressable
+            style={[
+              styles.syncBtn,
+              syncStatus.success && styles.syncBtnSuccess,
+              syncStatus.loading && styles.syncBtnDisabled,
+            ]}
+            onPress={handleSyncToDashboard}
+            disabled={syncStatus.loading}
+          >
+            <Ionicons
+              name={syncStatus.success ? 'cloud-done-outline' : 'cloud-upload-outline'}
+              size={18}
+              color={syncStatus.success ? theme.color.pass : theme.color.accent}
+            />
+            <Text
+              style={[
+                styles.syncBtnText,
+                syncStatus.success && { color: theme.color.pass },
+              ]}
+            >
+              {syncStatus.message || 'Sync to Mentor Dashboard'}
+            </Text>
+          </Pressable>
+
           <Pressable style={styles.exportBtn} onPress={handleShare}>
-            <Ionicons name="share-outline" size={18} color={theme.color.accent} />
-            <Text style={styles.exportBtnText}>Share / Export</Text>
+            <Ionicons name="share-outline" size={18} color={theme.color.textDim} />
+            <Text style={styles.exportBtnText}>Share / Local JSON File</Text>
           </Pressable>
 
           <Pressable style={styles.doneBtn} onPress={handleDone}>
@@ -291,21 +333,44 @@ const styles = StyleSheet.create({
     gap: theme.space.sm,
     marginTop: theme.space.xs,
   },
+  syncBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#1E293B',
+    borderColor: theme.color.accent,
+    borderWidth: 1.5,
+    paddingVertical: theme.space.md,
+    borderRadius: theme.radius.md,
+  },
+  syncBtnSuccess: {
+    borderColor: theme.color.pass,
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+  },
+  syncBtnDisabled: {
+    opacity: 0.6,
+  },
+  syncBtnText: {
+    color: theme.color.accent,
+    fontSize: theme.font.body,
+    fontWeight: '700',
+  },
   exportBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     backgroundColor: theme.color.surface,
-    borderColor: theme.color.accent,
-    borderWidth: 1.5,
+    borderColor: '#374151',
+    borderWidth: 1,
     paddingVertical: theme.space.sm + 2,
     borderRadius: theme.radius.md,
   },
   exportBtnText: {
-    color: theme.color.accent,
+    color: theme.color.textDim,
     fontSize: theme.font.body,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   doneBtn: {
     backgroundColor: theme.color.accent,

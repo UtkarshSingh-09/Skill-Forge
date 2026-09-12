@@ -1,0 +1,92 @@
+{
+  "id": "7408_and_gate_v1",
+  "title": "7408 Quad 2-Input AND Gate Verification",
+  "description": "Assemble a 7408 IC logic circuit and verify its electrical truth table using the Arduino.",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": "step_1_ic_placement",
+      "title": "Insert 7408 Quad AND Gate IC",
+      "instruction": "Place the 14-pin 7408 IC straddling the central divider trough, Pin 1 at E10, with notch pointing left toward column 1.",
+      "expect": {
+        "type": "ic_7408",
+        "cells": ["E10", "F10"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Place the 14-pin 7408 IC across the center breadboard trough.",
+        "wrong_position": "Ensure the IC straddles the center divider with Pin 1 in hole E10.",
+        "reversed": "Orient the IC with the notch pointing left toward column 1."
+      }
+    },
+    {
+      "id": "step_2_ic_power",
+      "title": "Wire IC Power (+5V) and Ground (GND)",
+      "instruction": "Connect Pin 14 (F10) to +rail with a red wire, and Pin 7 (E16) to -rail with a black wire.",
+      "expect": {
+        "type": "wire",
+        "cells": ["F10", "+rail"],
+        "color": "red"
+      },
+      "hints": {
+        "missing": "Connect Pin 14 (F10) to +rail and Pin 7 (E16) to -rail.",
+        "wrong_position": "Power wire must connect hole F10 (Pin 14) directly to the +rail."
+      }
+    },
+    {
+      "id": "step_3_input_a",
+      "title": "Wire Input A (Arduino D2 to Pin 1)",
+      "instruction": "Connect Arduino Digital Pin 2 to 7408 Pin 1 (E10) with a yellow jumper wire.",
+      "expect": {
+        "type": "wire",
+        "cells": ["E10", "Arduino_D2"],
+        "color": "yellow"
+      },
+      "hints": {
+        "missing": "Connect Arduino D2 to 7408 Pin 1 at hole E10.",
+        "wrong_position": "Input A jumper must seat in hole E10 (Pin 1)."
+      }
+    },
+    {
+      "id": "step_4_input_b",
+      "title": "Wire Input B (Arduino D3 to Pin 2)",
+      "instruction": "Connect Arduino Digital Pin 3 to 7408 Pin 2 (E11) with a yellow jumper wire.",
+      "expect": {
+        "type": "wire",
+        "cells": ["E11", "Arduino_D3"],
+        "color": "yellow"
+      },
+      "hints": {
+        "missing": "Connect Arduino D3 to 7408 Pin 2 at hole E11.",
+        "wrong_position": "Input B jumper must seat in hole E11 (Pin 2)."
+      }
+    },
+    {
+      "id": "step_5_output_y",
+      "title": "Wire Output Y & Indicator (Pin 3 to Arduino D4 & LED)",
+      "instruction": "Connect 7408 Pin 3 (E12) to Arduino Digital Pin 4 and indicator LED anode.",
+      "expect": {
+        "type": "wire",
+        "cells": ["E12", "Arduino_D4"],
+        "color": "yellow"
+      },
+      "hints": {
+        "missing": "Connect 7408 Pin 3 at hole E12 to Arduino D4.",
+        "wrong_position": "Output wire must seat in hole E12 (Pin 3)."
+      }
+    },
+    {
+      "id": "step_6_truth_table",
+      "title": "Verify AND Gate Truth Table",
+      "instruction": "Hands clear. Press TEST to execute electrical truth table verification over Arduino.",
+      "expect": {
+        "type": "ic_7408",
+        "cells": ["E10", "F10"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Ensure all pins and wires are firmly seated before electrical verification."
+      }
+    }
+  ]
+}

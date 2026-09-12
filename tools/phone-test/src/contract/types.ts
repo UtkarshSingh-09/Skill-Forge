@@ -1,37 +1,70 @@
 /**
  * SkillForge Master Interface Contract
  * FROZEN CONTRACT — Part 4 of SkillForge Master Plan
- * Owned by: Utkarsh Singh (Engine, Data & Hardware)
+ * Unified for Engine, Data, Perception & React Native App
  */
 
+export type Cell = string;            // "E5" | "+rail_5" | "-rail_7" | "E10" | "Arduino_D7"
 export type Verdict = 'PASS' | 'FAIL' | 'UNCERTAIN' | 'CHECKING';
 
-export type ComponentType = 'resistor' | 'led' | 'wire' | 'ic_7408' | 'capacitor';
+export type FailReason =
+  | 'missing'
+  | 'wrong_position'
+  | 'reversed'
+  | 'unstable'
+  | 'occluded'
+  | 'board_not_found'
+  | 'safety_violation'
+  | null;
 
-export type ComponentOrientation = 'STANDARD' | 'REVERSED';
+export type ComponentType = 'resistor' | 'led' | 'wire' | 'ic_7408' | 'ic' | 'capacitor' | 'unknown';
+
+export type ComponentOrientation =
+  | 'STANDARD'
+  | 'REVERSED'
+  | 'anode_up'
+  | 'anode_down'
+  | 'notch_left'
+  | 'notch_right'
+  | 'n/a';
 
 export interface DetectedComponent {
-  type: ComponentType;
-  cells: string[];                  // e.g. ["D10", "D14"] or ["+rail", "D10"]
-  confidence: number;               // 0.0 to 1.0
-  orientation?: ComponentOrientation;
-  color?: 'red' | 'black' | 'yellow';
+  id?: string;
+  type: ComponentType | string;
+  cells: Cell[];                      // occupied holes, e.g. ["E10", "E14"]
+  confidence: number;                 // 0.0 to 1.0
+  orientation?: ComponentOrientation | string;
+  color?: 'red' | 'black' | 'yellow' | string;
+  colour?: string | null;
 }
 
 export interface ConnectionState {
-  from: string;                     // hole name, e.g. "D10" or "+rail"
-  to: string;                       // hole name, e.g. "D14" or "-rail"
+  from: Cell;
+  to: Cell;
   present: boolean;
   confidence: number;
 }
 
+export interface DetectedConnection {
+  from: Cell;
+  to: Cell;
+  expectedColour?: string | null;
+  present: boolean;
+  confidence: number;
+}
+
+/** THE central object. Perception's only output. */
 export interface ObservationState {
-  timestamp: number;
+  timestamp?: number;
+  timestampMs?: number;
   boardDetected: boolean;
   handsClear: boolean;              // true if user hands are out of view
   sceneStable: boolean;             // true if camera/board motion is zero
+  confidence?: number;
+  overallConfidence?: number;
+  occupancy?: Record<Cell, any>;
   components: DetectedComponent[];
-  connections: ConnectionState[];
+  connections: (ConnectionState | DetectedConnection)[];
 }
 
 export interface SafetyRule {
@@ -39,14 +72,16 @@ export interface SafetyRule {
   description: string;
   violated: (obs: ObservationState) => boolean;
   message: string;
-  highlightCells?: string[];
+  highlightCells?: Cell[];
 }
 
 export interface StepExpectation {
-  type: ComponentType;
-  cells: string[];                  // Target breadboard holes
-  orientation?: ComponentOrientation;
-  color?: 'red' | 'black' | 'yellow';
+  type: ComponentType | string;
+  cells?: Cell[];                   // Target breadboard holes
+  connects?: [Cell, Cell];
+  orientation?: ComponentOrientation | string;
+  color?: 'red' | 'black' | 'yellow' | string;
+  colour?: string;
 }
 
 export interface StepHints {
@@ -54,33 +89,42 @@ export interface StepHints {
   wrong_position?: string;
   reversed?: string;
   safety?: string;
+  safety_violation?: string;
+  occluded?: string;
+  board_not_found?: string;
+  unstable?: string;
 }
 
 export interface Step {
-  id: string;
-  title: string;
+  id: string | number;
+  title?: string;
   instruction: string;
   expect: StepExpectation;
-  hints: StepHints;
+  hints: StepHints & Partial<Record<NonNullable<FailReason>, string>>;
   safetyRules?: SafetyRule[];
 }
 
+export type ProcedureStep = Step;
+
 export interface Procedure {
-  id: string;
+  id?: string;
+  procedureId?: string;
   title: string;
-  description: string;
-  version: string;
+  description?: string;
+  version?: string;
+  difficulty?: string;
+  estimatedTimeMinutes?: number;
   steps: Step[];
 }
 
 export interface EvaluationResult {
-  stepId: string;
+  stepId: string | number;
   result: Verdict;
-  reason: 'missing' | 'wrong_position' | 'reversed' | 'safety_violation' | 'board_not_found' | 'occluded' | 'unstable' | null;
+  reason: FailReason;
   hint: string | null;
   confidence: number;
   safetyViolations: string[];
-  highlightCells: string[];          // Cell coordinates to glow green or red on overlay
+  highlightCells: Cell[];          // Cell coordinates to glow green or red on overlay
 }
 
 export type SessionEventType =
@@ -98,14 +142,16 @@ export type SessionEventType =
 
 export interface SessionEvent {
   id?: number;
-  sessionId: string;
+  sessionId?: string;
+  t?: number;
+  timestamp?: number;
   type: SessionEventType;
-  timestamp: number;
   payload: Record<string, unknown>;
 }
 
 export interface GroundTruth {
   available: boolean;
+  continuity?: boolean;
   ledOn?: boolean;
   raw?: number;
   truthTable?: Array<{
@@ -181,4 +227,3 @@ export interface LearningGraph {
   nodes: LearningNode[];
   overallMasteryPct: number;
 }
-

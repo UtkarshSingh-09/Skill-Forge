@@ -1,0 +1,92 @@
+{
+  "id": "arduino_led_v2",
+  "title": "Arduino Uno + LED Circuit — Level 2 (Independent)",
+  "description": "Independent challenge: Construct the LED circuit and select the appropriate digital output pin (D7) to drive the load.",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": "step_1_resistor",
+      "title": "Place Current-Limiting Resistor",
+      "instruction": "Insert the 1k ohm resistor into rows E10 and E14 to limit LED current.",
+      "expect": {
+        "type": "resistor",
+        "cells": ["E10", "E14"]
+      },
+      "hints": {
+        "missing": "Place the 1k ohm resistor on the board between holes E10 and E14.",
+        "wrong_position": "Check holes: resistor must bridge E10 to E14."
+      }
+    },
+    {
+      "id": "step_2_led",
+      "title": "Place the Polarized LED",
+      "instruction": "Insert the LED in series: Anode (longer leg) in E14, Cathode (shorter leg) in E18.",
+      "expect": {
+        "type": "led",
+        "cells": ["E14", "E18"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Insert the LED into holes E14 and E18.",
+        "wrong_position": "Check LED holes: long leg (anode) in E14, short leg (cathode) in E18.",
+        "reversed": "Reverse the LED: anode must connect to the resistor node at E14."
+      }
+    },
+    {
+      "id": "step_3_vcc_rail",
+      "title": "Power Bus: Connect 5V Rail",
+      "instruction": "Wire Arduino 5V pin to the (+) power rail.",
+      "expect": {
+        "type": "wire",
+        "cells": ["Arduino_5V", "+rail"],
+        "color": "red"
+      },
+      "hints": {
+        "missing": "Connect a wire from Arduino 5V pin to the (+) power rail.",
+        "wrong_position": "Ensure the 5V jumper connects to the (+) power rail."
+      }
+    },
+    {
+      "id": "step_4_gnd_rail",
+      "title": "Ground Bus: Connect Ground Rail",
+      "instruction": "Wire Arduino GND pin to the (-) ground rail.",
+      "expect": {
+        "type": "wire",
+        "cells": ["Arduino_GND", "-rail"],
+        "color": "black"
+      },
+      "hints": {
+        "missing": "Connect a wire from Arduino GND pin to the (-) ground rail.",
+        "wrong_position": "Ensure the ground jumper connects to the (-) ground rail."
+      }
+    },
+    {
+      "id": "step_5_control_wire",
+      "title": "Signal Pin Challenge",
+      "instruction": "Connect a signal jumper from digital pin D7 to resistor input row E10.",
+      "expect": {
+        "type": "wire",
+        "cells": ["Arduino_D7", "E10"],
+        "color": "yellow"
+      },
+      "hints": {
+        "missing": "Connect signal wire to digital pin D7 and resistor node E10.",
+        "wrong_position": "The firmware drives digital pin D7. Connect D7 to row E10."
+      }
+    },
+    {
+      "id": "step_6_ground_return",
+      "title": "Complete Ground Return",
+      "instruction": "Complete the return path: connect row E18 (LED cathode) to (-) ground rail.",
+      "expect": {
+        "type": "wire",
+        "cells": ["E18", "-rail"],
+        "color": "black"
+      },
+      "hints": {
+        "missing": "Connect a jumper wire from row E18 to the (-) ground rail.",
+        "wrong_position": "Ensure row E18 connects directly to the (-) ground rail."
+      }
+    }
+  ]
+}

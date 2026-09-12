@@ -31,6 +31,7 @@ export function CoachScreen() {
   const lastResult = useStore((s) => s.lastResult);
   const busy = useStore((s) => s.busy);
   const selectedFixture = useStore((s) => s.selectedFixture);
+  const groundTruth = useStore((s) => s.groundTruth);
   const events = useStore((s) => s.events);
 
   const { requestTest, selectFixture, resetSession } = useStore((s) => s.actions);
@@ -98,9 +99,10 @@ export function CoachScreen() {
   }, [stepIndex, totalSteps, lastResult, router]);
 
   const fixtureOptions: Array<{ key: MockFixtureKey; label: string }> = [
+    { key: 'live', label: '⚡ Live Hardware' },
     { key: 'wrong', label: 'Wrong (FAIL)' },
     { key: 'correct', label: 'Correct (PASS)' },
-    { key: 'occ', label: 'Occluded (UNCERTAIN)' },
+    { key: 'occ', label: 'Occluded' },
   ];
 
   const currentHintText =
@@ -108,11 +110,12 @@ export function CoachScreen() {
     (currentStep && lastResult?.reason && currentStep.hints[lastResult.reason as keyof typeof currentStep.hints]) ||
     instruction;
 
-  // Demo GroundTruth for Arduino panel when enabled
-  const demoGroundTruth: GroundTruth = {
+  // Real or fallback GroundTruth for Arduino panel
+  const activeGroundTruth: GroundTruth = groundTruth || {
     available: caps.arduino,
     continuity: lastResult?.result === 'PASS',
     ledOn: lastResult?.result === 'PASS',
+    raw: lastResult?.result === 'PASS' ? 710 : 0,
     truthTable: [
       { a: 0, b: 0, out: 0, expected: 0 },
       { a: 0, b: 1, out: 0, expected: 0 },
@@ -170,7 +173,11 @@ export function CoachScreen() {
         {/* Dev Fixture Switcher */}
         <View style={styles.devBar}>
           <View style={styles.devBarHeader}>
-            <Text style={styles.devBarTitle}>Dev Fixture: {selectedFixture.toUpperCase()}</Text>
+            <Text style={styles.devBarTitle}>
+              {selectedFixture === 'live'
+                ? `⚡ LIVE HARDWARE${groundTruth?.available ? ` (Sense: ${groundTruth.raw})` : ' (Auto)'}`
+                : `Simulated: ${selectedFixture.toUpperCase()}`}
+            </Text>
             <Pressable onPress={resetSession} style={styles.resetBtn}>
               <Text style={styles.resetBtnText}>Restart</Text>
             </Pressable>
@@ -199,10 +206,10 @@ export function CoachScreen() {
         </View>
       </View>
 
-      {/* F.4 Arduino Ground Truth Panel (when caps.arduino is true) */}
+      {/* F.4 Arduino Ground Truth Panel (when caps.arduino is true or hardware detected) */}
       <ArduinoPanel
-        groundTruth={demoGroundTruth}
-        procedureId={procedure?.procedureId}
+        groundTruth={activeGroundTruth}
+        procedureId={procedure?.id || procedure?.procedureId}
       />
 
       {/* 3. Bottom Controls Area (B.3) */}

@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { theme } from '../theme';
-import { initialSkillProfile } from '../../session/skillProfile';
+import { initialSkillProfile, getLearningHistory, getOverallMasteryPct } from '../../session/skillProfile';
 
 export function LearningGraph() {
   const profile = initialSkillProfile;
+  const history = getLearningHistory();
+  const overallMastery = getOverallMasteryPct();
 
   return (
     <View style={styles.card}>
@@ -14,7 +16,7 @@ export function LearningGraph() {
           <Text style={styles.subtitle}>Cross-session mastery & error recovery</Text>
         </View>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{profile.sessionsCompleted} LABS DONE</Text>
+          <Text style={styles.badgeText}>{overallMastery}% OVERALL MASTERY</Text>
         </View>
       </View>
 
@@ -36,6 +38,45 @@ export function LearningGraph() {
             </View>
           </View>
         ))}
+      </View>
+
+      {/* Cross-Session Attempt Progression Timeline (Emergency Pivot Showcase) */}
+      <View style={styles.progressionSection}>
+        <Text style={styles.progressionTitle}>Session-by-Session Arc</Text>
+        <View style={styles.attemptsRow}>
+          {history.map((node, index) => {
+            const isHighAccuracy = node.accuracyPct >= 80;
+            return (
+              <View key={index} style={styles.attemptCard}>
+                <View style={styles.attemptHeader}>
+                  <Text style={styles.attemptLabel}>Attempt #{node.attemptNumber}</Text>
+                  <Text
+                    style={[
+                      styles.accuracyText,
+                      { color: isHighAccuracy ? theme.color.pass : theme.color.safety },
+                    ]}
+                  >
+                    {node.accuracyPct}%
+                  </Text>
+                </View>
+                <View style={styles.attemptBar}>
+                  <View
+                    style={[
+                      styles.attemptFill,
+                      {
+                        width: `${node.accuracyPct}%`,
+                        backgroundColor: isHighAccuracy ? theme.color.pass : theme.color.safety,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.attemptMeta}>
+                  {node.completionTimeSec}s · {node.hintsUsed} {node.hintsUsed === 1 ? 'hint' : 'hints'}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
       </View>
 
       {/* Key Metric Pills */}
@@ -123,6 +164,61 @@ const styles = StyleSheet.create({
   fill: {
     height: '100%',
     borderRadius: 3,
+  },
+  progressionSection: {
+    gap: theme.space.xs,
+    paddingTop: theme.space.xs,
+    borderTopWidth: 1,
+    borderTopColor: '#252C37',
+  },
+  progressionTitle: {
+    color: theme.color.textDim,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  attemptsRow: {
+    flexDirection: 'row',
+    gap: theme.space.sm,
+  },
+  attemptCard: {
+    flex: 1,
+    backgroundColor: '#161B22',
+    padding: theme.space.sm,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: '#30363D',
+    gap: 4,
+  },
+  attemptHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  attemptLabel: {
+    color: theme.color.textDim,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  accuracyText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  attemptBar: {
+    height: 4,
+    backgroundColor: '#21262D',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  attemptFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  attemptMeta: {
+    color: theme.color.textDim,
+    fontSize: 9,
+    marginTop: 2,
   },
   metricGrid: {
     flexDirection: 'row',

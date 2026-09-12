@@ -1,10 +1,14 @@
 {
-  "timestampMs": 1726113602000,
+  "timestamp": 1726117210000,
   "boardDetected": true,
-  "sceneStable": true,
   "handsClear": false,
-  "overallConfidence": 0.35,
-  "occupancy": {},
-  "components": [],
+  "sceneStable": false,
+  "components": [
+    {
+      "type": "resistor",
+      "cells": ["D10", "D14"],
+      "confidence": 0.58
+    }
+  ],
   "connections": []
 }

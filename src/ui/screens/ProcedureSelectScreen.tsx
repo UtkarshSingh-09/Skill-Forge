@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { useStore } from '../../session/store';
 import arduinoLedProcedure from '../../contract/procedures/arduino_led_v1.json';
-import ledProcedure from '../../contract/procedures/led_procedure.json';
+import arduinoLedV2Procedure from '../../contract/procedures/arduino_led_v2.json';
 import andGateProcedure from '../../contract/procedures/and_gate_procedure.json';
 import { Procedure } from '../../contract/types';
 
@@ -17,7 +17,7 @@ export function ProcedureSelectScreen() {
 
   const procedures: Procedure[] = [
     arduinoLedProcedure as unknown as Procedure,
-    ledProcedure as unknown as Procedure,
+    arduinoLedV2Procedure as unknown as Procedure,
     andGateProcedure as unknown as Procedure,
   ];
 
@@ -25,6 +25,8 @@ export function ProcedureSelectScreen() {
     setProcedure(proc);
     router.push('/(tabs)/coach');
   };
+
+  const getProcId = (p: any) => p?.id || p?.procedureId || '';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -64,13 +66,30 @@ export function ProcedureSelectScreen() {
         {/* Procedure Cards List */}
         <View style={styles.cardsContainer}>
           {procedures.map((proc) => {
-            const isCurrent = currentProcedure?.procedureId === proc.procedureId;
+            const procId = getProcId(proc);
+            const currentId = getProcId(currentProcedure);
+            const isCurrent = currentId === procId;
             const stepCount = proc.steps.length;
-            const isIntermediate = proc.procedureId.includes('AND');
+            const isV2 = procId.includes('v2');
+            const isIntermediate = procId.includes('AND') || procId.includes('gate');
+
+            let badgeLabel = 'PRIMARY LAB (P-A v2)';
+            let badgeStyle = styles.badgeBeginner;
+            let badgeTextStyle = styles.badgeTextBeginner;
+
+            if (isV2) {
+              badgeLabel = 'PROGRESSION (Level 2)';
+              badgeStyle = styles.badgeProgression;
+              badgeTextStyle = styles.badgeTextProgression;
+            } else if (isIntermediate) {
+              badgeLabel = 'CLASSIC TTL (7408)';
+              badgeStyle = styles.badgeIntermediate;
+              badgeTextStyle = styles.badgeTextIntermediate;
+            }
 
             return (
               <View
-                key={proc.procedureId}
+                key={procId}
                 style={[
                   styles.card,
                   isCurrent && styles.cardActive,
@@ -79,16 +98,16 @@ export function ProcedureSelectScreen() {
                 {/* Header Row */}
                 <View style={styles.cardHeader}>
                   <View style={styles.tagRow}>
-                    <View style={[styles.badge, isIntermediate ? styles.badgeIntermediate : styles.badgeBeginner]}>
-                      <Text style={[styles.badgeText, isIntermediate ? styles.badgeTextIntermediate : styles.badgeTextBeginner]}>
-                        {isIntermediate ? 'INTERMEDIATE (TTL 7408)' : 'BEGINNER (P-A)'}
+                    <View style={[styles.badge, badgeStyle]}>
+                      <Text style={[styles.badgeText, badgeTextStyle]}>
+                        {badgeLabel}
                       </Text>
                     </View>
                     <Text style={styles.stepsMeta}>{stepCount} Steps</Text>
                   </View>
 
                   <Ionicons
-                    name={isIntermediate ? 'hardware-chip-outline' : 'bulb-outline'}
+                    name={isIntermediate ? 'hardware-chip-outline' : isV2 ? 'trending-up-outline' : 'bulb-outline'}
                     size={24}
                     color={isCurrent ? theme.color.accent : theme.color.textDim}
                   />
@@ -130,40 +149,40 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.space.lg,
-    paddingVertical: theme.space.sm,
+    paddingVertical: theme.space.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#252C37',
+    borderBottomColor: '#1E293B',
   },
   branding: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.space.sm,
   },
   brandTitle: {
     color: theme.color.text,
-    fontSize: theme.font.h1,
+    fontSize: 20,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   offlineBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#161B22',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    gap: 5,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: '#30363D',
+    borderColor: 'rgba(34, 197, 94, 0.25)',
   },
   greenDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: theme.color.pass,
   },
   offlineText: {
-    color: theme.color.textDim,
+    color: theme.color.pass,
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -181,12 +200,12 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: theme.color.text,
-    fontSize: theme.font.h2,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
   },
   heroSubtitle: {
     color: theme.color.textDim,
-    fontSize: theme.font.body - 2,
+    fontSize: 14,
     lineHeight: 20,
   },
   cardsContainer: {
@@ -194,15 +213,15 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: theme.color.surface,
-    padding: theme.space.lg,
     borderRadius: theme.radius.md,
-    borderWidth: 1.5,
+    padding: theme.space.lg,
+    gap: theme.space.md,
+    borderWidth: 1,
     borderColor: '#2D3748',
-    gap: theme.space.sm,
-    elevation: 3,
   },
   cardActive: {
     borderColor: theme.color.accent,
+    backgroundColor: '#131D2E',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -212,32 +231,43 @@ const styles = StyleSheet.create({
   tagRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.space.sm,
   },
   badge: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 3,
+    borderRadius: theme.radius.sm,
   },
   badgeBeginner: {
     backgroundColor: 'rgba(34, 197, 94, 0.15)',
   },
-  badgeIntermediate: {
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
   badgeTextBeginner: {
     color: theme.color.pass,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  badgeProgression: {
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+  },
+  badgeTextProgression: {
+    color: theme.color.accent,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  badgeIntermediate: {
+    backgroundColor: 'rgba(168, 85, 247, 0.15)',
   },
   badgeTextIntermediate: {
-    color: theme.color.accent,
+    color: '#C084FC',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   stepsMeta: {
     color: theme.color.textDim,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   cardTitle: {
@@ -254,15 +284,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
     backgroundColor: theme.color.accent,
-    paddingVertical: theme.space.sm + 2,
+    paddingVertical: 12,
     borderRadius: theme.radius.sm,
+    gap: theme.space.xs,
     marginTop: theme.space.xs,
   },
   startBtnText: {
     color: theme.color.bg,
-    fontSize: theme.font.body - 2,
+    fontSize: 14,
     fontWeight: '700',
   },
 });

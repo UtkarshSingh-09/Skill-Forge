@@ -1,0 +1,15 @@
+{
+  "timestamp": 1789191001000,
+  "boardDetected": true,
+  "handsClear": true,
+  "sceneStable": true,
+  "components": [
+    {
+      "type": "ic_7408",
+      "cells": ["E11", "F11"],
+      "confidence": 0.94,
+      "orientation": "STANDARD"
+    }
+  ],
+  "connections": []
+}

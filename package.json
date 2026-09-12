@@ -19,6 +19,7 @@
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-fast-opencv": "^1.0.1",
+    "react-native-nitro-modules": "^0.37.1",
     "react-native-safe-area-context": "^5.9.1",
     "react-native-vision-camera": "^5.2.3",
     "react-native-worklets-core": "^1.6.3",

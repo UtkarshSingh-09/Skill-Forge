@@ -1,0 +1,13 @@
+{
+  "boardWidth": 360,
+  "boardHeight": 240,
+  "colSpacing": 9.6,
+  "rowSpacing": 9.6,
+  "originX": 40,
+  "originY": 65,
+  "troughGap": 16,
+  "topRailPos": 26,
+  "topRailNeg": 42,
+  "bottomRailPos": 195,
+  "bottomRailNeg": 211
+}

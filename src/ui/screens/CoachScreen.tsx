@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,13 +7,16 @@ import { theme } from '../theme';
 import { StepHeader } from '../components/StepHeader';
 import { VerdictPill } from '../components/VerdictPill';
 import { TestButton } from '../components/TestButton';
+import { CameraView } from '../components/CameraView';
+import { BoardOverlay } from '../components/BoardOverlay';
 import { useStore } from '../../session/store';
+import { mapVerdict } from '../verdictView';
 import { MockFixtureKey } from '../dev/MockPerception';
 
 export function CoachScreen() {
   const router = useRouter();
 
-  // Read all state directly from the Zustand store
+  // Read state from Zustand store
   const procedure = useStore((s) => s.procedure);
   const stepIndex = useStore((s) => s.stepIndex);
   const lastResult = useStore((s) => s.lastResult);
@@ -23,11 +26,19 @@ export function CoachScreen() {
 
   const { requestTest, selectFixture, resetSession } = useStore((s) => s.actions);
 
+  // Camera viewport dimensions for overlay homography alignment
+  const [cameraSize, setCameraSize] = useState<{ width: number; height: number }>({
+    width: 360,
+    height: 320,
+  });
+
   const totalSteps = procedure?.steps.length ?? 4;
   const currentStep = procedure?.steps[stepIndex];
   const instruction = currentStep?.instruction ?? 'Place the resistor from +5V to E5';
 
-  // Navigate to summary when the last step passes
+  const verdictConfig = mapVerdict(lastResult);
+
+  // Auto-navigate to summary when the last step passes
   useEffect(() => {
     if (stepIndex === totalSteps - 1 && lastResult?.result === 'PASS') {
       const timer = setTimeout(() => {
@@ -45,22 +56,39 @@ export function CoachScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* 1. StepHeader with progress dots and gear button */}
+      {/* 1. StepHeader */}
       <StepHeader
         stepIndex={stepIndex}
         total={totalSteps}
         instruction={instruction}
       />
 
-      {/* 2. Camera Preview Area */}
-      <View style={styles.cameraArea}>
-        <View style={styles.cameraPlaceholder}>
-          <Ionicons name="camera-outline" size={48} color={theme.color.textDim} />
-          <Text style={styles.cameraText}>CAMERA PREVIEW</Text>
-          <Text style={styles.cameraSubtext}>Fixture Mode Active</Text>
-        </View>
+      {/* 2. Camera Preview Area with Sibling Overlay */}
+      <View
+        style={styles.cameraArea}
+        onLayout={(e) => {
+          const { width, height } = e.nativeEvent.layout;
+          if (width > 0 && height > 0) {
+            setCameraSize({ width, height });
+          }
+        }}
+      >
+        {/* Sibling #1: Full-bleed CameraView */}
+        <CameraView
+          isActive={true}
+          fixtureMode={true}
+        />
 
-        {/* Dev Fixture Switcher (Part C & D.2) */}
+        {/* Sibling #2: Skia BoardOverlay (never a child of camera) */}
+        <BoardOverlay
+          highlightCells={lastResult?.highlightCells ?? []}
+          color={verdictConfig.overlayColor}
+          width={cameraSize.width}
+          height={cameraSize.height}
+          visible={true}
+        />
+
+        {/* Dev Fixture Switcher */}
         <View style={styles.devBar}>
           <View style={styles.devBarHeader}>
             <Text style={styles.devBarTitle}>Dev Fixture: {selectedFixture.toUpperCase()}</Text>
@@ -145,21 +173,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#050709',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  cameraPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.space.xs,
-  },
-  cameraText: {
-    color: theme.color.textDim,
-    fontSize: theme.font.label,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-  },
-  cameraSubtext: {
-    color: '#4B5563',
-    fontSize: 12,
+    overflow: 'hidden',
   },
   devBar: {
     position: 'absolute',
@@ -171,6 +185,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
     borderWidth: 1,
     borderColor: '#2D3748',
+    zIndex: 10,
   },
   devBarHeader: {
     flexDirection: 'row',

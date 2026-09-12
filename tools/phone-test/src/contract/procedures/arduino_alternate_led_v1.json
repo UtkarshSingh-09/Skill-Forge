@@ -1,0 +1,91 @@
+{
+  "id": "arduino_alternate_led_v1",
+  "title": "Arduino Uno + Alternate Blink (Digital Pins D7 & D8)",
+  "description": "Construct and verify a 2-LED alternating blink circuit using Pins D7 & D8 with a single shared current-limiting resistor.",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": "step_1_resistor",
+      "title": "Place Shared Current-Limiting Resistor",
+      "instruction": "Insert the 1k ohm resistor from breadboard ground rail (-rail) to row E5.",
+      "expect": {
+        "type": "resistor",
+        "cells": ["-rail", "E5"]
+      },
+      "hints": {
+        "missing": "Place the 1k ohm resistor connecting the (-) ground rail to row E5.",
+        "wrong_position": "Ensure the resistor connects the ground rail to row E5."
+      }
+    },
+    {
+      "id": "step_2_led_red",
+      "title": "Place Red LED (LED 1)",
+      "instruction": "Insert the Red LED: Anode (longer leg) in row E10, Cathode (shorter leg) in (-) ground rail.",
+      "expect": {
+        "type": "led",
+        "cells": ["E10", "-rail"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Place the Red LED with anode in row E10 and cathode in ground rail.",
+        "wrong_position": "Check Red LED pins: long leg in E10, short leg in (-) ground rail.",
+        "reversed": "Reverse the Red LED: anode must connect to row E10."
+      }
+    },
+    {
+      "id": "step_3_led_green",
+      "title": "Place Green LED (LED 2)",
+      "instruction": "Insert the Green LED: Anode (longer leg) in row E15, Cathode (shorter leg) in (-) ground rail.",
+      "expect": {
+        "type": "led",
+        "cells": ["E15", "-rail"],
+        "orientation": "STANDARD"
+      },
+      "hints": {
+        "missing": "Place the Green LED with anode in row E15 and cathode in ground rail.",
+        "wrong_position": "Check Green LED pins: long leg in E15, short leg in (-) ground rail.",
+        "reversed": "Reverse the Green LED: anode must connect to row E15."
+      }
+    },
+    {
+      "id": "step_4_control_d7",
+      "title": "Connect Arduino D7 to Red LED",
+      "instruction": "Connect a wire from Arduino digital pin D7 to row E10 (Red LED Anode).",
+      "expect": {
+        "type": "wire",
+        "cells": ["Arduino_D7", "E10"]
+      },
+      "hints": {
+        "missing": "Connect a wire from Arduino pin D7 to row E10.",
+        "wrong_position": "Ensure the wire connects Arduino D7 to row E10."
+      }
+    },
+    {
+      "id": "step_5_control_d8",
+      "title": "Connect Arduino D8 to Green LED",
+      "instruction": "Connect a wire from Arduino digital pin D8 to row E15 (Green LED Anode).",
+      "expect": {
+        "type": "wire",
+        "cells": ["Arduino_D8", "E15"]
+      },
+      "hints": {
+        "missing": "Connect a wire from Arduino pin D8 to row E15.",
+        "wrong_position": "Ensure the wire connects Arduino D8 to row E15."
+      }
+    },
+    {
+      "id": "step_6_ground_return",
+      "title": "Connect Arduino Ground",
+      "instruction": "Connect a black wire from Arduino GND pin to row E5 (completing ground path through resistor).",
+      "expect": {
+        "type": "wire",
+        "cells": ["Arduino_GND", "E5"],
+        "color": "black"
+      },
+      "hints": {
+        "missing": "Connect a black wire from Arduino GND to row E5.",
+        "wrong_position": "Connect Arduino GND to row E5 where the resistor lead is placed."
+      }
+    }
+  ]
+}

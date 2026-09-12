@@ -127,4 +127,24 @@ describe('Arduino Uno + LED Circuit Verification Suite (arduino_led_v1)', () => 
     expect(testRes.ledOn).toBe(true);
     expect(testRes.raw).toBe(480);
   });
+
+  it('successfully loads arduino_sos_v1 procedure with 6 steps and D7 signal pin', () => {
+    const sosProcPath = path.join(__dirname, '../../contract/procedures/arduino_sos_v1.json');
+    const sosProc: Procedure = JSON.parse(fs.readFileSync(sosProcPath, 'utf-8'));
+    expect(sosProc.id).toBe('arduino_sos_v1');
+    expect(sosProc.steps).toHaveLength(6);
+    expect(sosProc.steps[4].expect.cells).toEqual(['Arduino_D7', 'E10']);
+    const engine = new ProcedureEngine(sosProc, 0);
+    const res = evalStable(engine, obsCorrect);
+    expect(res.result).toBe('PASS');
+  });
+
+  it('successfully loads arduino_alternate_led_v1 procedure with 6 steps and D7 & D8 signal pins', () => {
+    const altProcPath = path.join(__dirname, '../../contract/procedures/arduino_alternate_led_v1.json');
+    const altProc: Procedure = JSON.parse(fs.readFileSync(altProcPath, 'utf-8'));
+    expect(altProc.id).toBe('arduino_alternate_led_v1');
+    expect(altProc.steps).toHaveLength(6);
+    expect(altProc.steps[3].expect.cells).toEqual(['Arduino_D7', 'E10']);
+    expect(altProc.steps[4].expect.cells).toEqual(['Arduino_D8', 'E15']);
+  });
 });

@@ -9,10 +9,18 @@ import {
 import defaultProcedure from '../contract/procedures/arduino_led_v1.json';
 import { MockFixtureKey, getMockObservation } from '../ui/dev/MockPerception';
 import { ProcedureEngine } from '../engine/procedureEngine';
-import { persistEvent } from './events';
+import { persistEvent, persistExperiment, getAllExperiments } from './events';
+import { ExperimentRow } from './experimentCatalog';
 import { createLearningNodeFromEvents } from '../engine/learningGraph';
 import { updateLearningGraph, getLearningHistory } from './skillProfile';
 import { caps } from '../capabilities';
+import {
+  InteractionState,
+  InteractionEvent,
+  INITIAL_INTERACTION_STATE,
+  reduceInteraction,
+  micShouldBeActive,
+} from '../engine/interactionFlow';
 
 export interface AppState {
   procedure: Procedure | null;
@@ -23,6 +31,12 @@ export interface AppState {
   events: SessionEvent[];
   busy: boolean;
   selectedFixture: MockFixtureKey;
+  /** Master Plan §4.5: scrollable experiment log for the Analyse page's bottom panel. */
+  experiments: ExperimentRow[];
+  /** Master Plan §4.4: Q&A interactive state machine driving the Analyse page interaction card. */
+  interaction: InteractionState;
+  /** Master Plan §3.3: Active sensor pill strip flags (camera, mic). */
+  sensors: { camera: boolean; mic: boolean };
 
   actions: {
     requestTest: () => Promise<void>;   // the ONE entry point for verification
@@ -32,6 +46,9 @@ export interface AppState {
     setProcedure: (procedure: Procedure) => void;
     selectFixture: (key: MockFixtureKey) => void;
     resetSession: () => void;
+    loadExperiments: () => Promise<void>;
+    dispatchInteraction: (event: InteractionEvent) => void;
+    setSensorState: (sensor: 'camera' | 'mic', active: boolean) => void;
   };
 }
 
@@ -54,6 +71,9 @@ export const useStore = create<AppState>((set, get) => ({
   ],
   busy: false,
   selectedFixture: 'live', // Default to 'live' dynamic hardware
+  experiments: [],
+  interaction: INITIAL_INTERACTION_STATE,
+  sensors: { camera: false, mic: false },
 
   actions: {
     requestTest: async () => {
@@ -162,6 +182,20 @@ export const useStore = create<AppState>((set, get) => ({
         groundTruth: updatedGroundTruth,
       });
 
+      // 5b. Append this run to the experiment log (Master Plan §4.5)
+      if (result.result === 'PASS' || result.result === 'FAIL') {
+        const procName = currentProcedure.title ?? currentProcedure.id ?? 'Untitled Procedure';
+        const procId = currentProcedure.id || (currentProcedure as any).procedureId || 'unknown';
+        const row: ExperimentRow = {
+          name: `${procName} — Step ${state.stepIndex + 1}`,
+          simId: procId,
+          verdict: result.result,
+          timestamp: Date.now(),
+        };
+        set((s) => ({ experiments: [row, ...s.experiments] }));
+        void persistExperiment(row);
+      }
+
       // 6. Push matching SessionEvent
       if (result.result === 'PASS') {
         get().actions.pushEvent({
@@ -269,11 +303,36 @@ export const useStore = create<AppState>((set, get) => ({
       set({ selectedFixture: key });
     },
 
+    loadExperiments: async () => {
+      const rows = await getAllExperiments();
+      set({ experiments: rows });
+    },
+
+    dispatchInteraction: (event: InteractionEvent) => {
+      const current = get().interaction;
+      const next = reduceInteraction(current, event);
+      set({
+        interaction: next,
+        sensors: {
+          ...get().sensors,
+          mic: micShouldBeActive(next),
+        },
+      });
+    },
+
+    setSensorState: (sensor: 'camera' | 'mic', active: boolean) => {
+      set((s) => ({
+        sensors: { ...s.sensors, [sensor]: active },
+      }));
+    },
+
     resetSession: () => {
       set({
         stepIndex: 0,
         lastObservation: null,
         lastResult: null,
+        interaction: INITIAL_INTERACTION_STATE,
+        sensors: { camera: false, mic: false },
         events: [
           {
             t: Date.now(),

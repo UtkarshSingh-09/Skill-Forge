@@ -10,11 +10,16 @@ import { TestButton } from '../components/TestButton';
 import { CameraView } from '../components/CameraView';
 import { BoardOverlay } from '../components/BoardOverlay';
 import { HintSheet } from '../components/HintSheet';
+import { SafetyBanner, DebugCoachBanner } from '../components/CoachBanners';
+import { ArduinoPanel } from '../components/ArduinoPanel';
 import { useStore } from '../../session/store';
 import { mapVerdict } from '../verdictView';
 import { MockFixtureKey } from '../dev/MockPerception';
 import { speak } from '../speech/tts';
 import { caps } from '../../capabilities';
+import { analyseDebugging } from '../../engine/debugCoach';
+import { explain } from '../../llm/explainer';
+import { GroundTruth } from '../../contract/types';
 
 export function CoachScreen() {
   const router = useRouter();
@@ -29,8 +34,10 @@ export function CoachScreen() {
 
   const { requestTest, selectFixture, resetSession } = useStore((s) => s.actions);
 
-  // Bottom Sheet Visibility
+  // Bottom Sheet Visibility and LLM Explanation state
   const [hintSheetVisible, setHintSheetVisible] = useState(false);
+  const [llmExplanation, setLlmExplanation] = useState<string | undefined>(undefined);
+  const [debugMessage, setDebugMessage] = useState<string | null>(null);
 
   // Camera viewport dimensions for overlay homography alignment
   const [cameraSize, setCameraSize] = useState<{ width: number; height: number }>({
@@ -44,20 +51,31 @@ export function CoachScreen() {
 
   const verdictConfig = mapVerdict(lastResult);
 
-  // Track previous result to trigger TTS and HintSheet on state change
+  // Track previous result to trigger TTS, LLM explanation, and DebugCoach
   const prevResultRef = useRef<typeof lastResult>(null);
 
   useEffect(() => {
-    // Only react when a test has completed
     if (lastResult && lastResult !== prevResultRef.current) {
       prevResultRef.current = lastResult;
 
+      // 1. Check DebugCoach for intervention
+      const intervention = analyseDebugging(events);
+      if (intervention) {
+        setDebugMessage(intervention);
+      }
+
+      // 2. Trigger Async LLM Explainer (fire-and-forget, never blocks requestTest)
+      if (caps.llm) {
+        explain(lastResult, instruction).then((text) => {
+          if (text) setLlmExplanation(text);
+        });
+      }
+
+      // 3. Spoken guidance & HintSheet auto-open on FAIL/UNCERTAIN
       if (lastResult.result === 'FAIL' || lastResult.result === 'UNCERTAIN') {
-        // 1. Speak feedback if TTS enabled
         if (verdictConfig.speak) {
           speak(verdictConfig.speak);
         }
-        // 2. Open HintSheet automatically on FAIL/UNCERTAIN
         setHintSheetVisible(true);
       } else if (lastResult.result === 'PASS') {
         if (verdictConfig.speak) {
@@ -65,7 +83,7 @@ export function CoachScreen() {
         }
       }
     }
-  }, [lastResult, verdictConfig.speak]);
+  }, [lastResult, events, instruction, verdictConfig.speak]);
 
   // Auto-navigate to summary when the last step passes
   useEffect(() => {
@@ -88,6 +106,19 @@ export function CoachScreen() {
     (currentStep && lastResult?.reason && currentStep.hints[lastResult.reason as keyof typeof currentStep.hints]) ||
     instruction;
 
+  // Demo GroundTruth for Arduino panel when enabled
+  const demoGroundTruth: GroundTruth = {
+    available: caps.arduino,
+    continuity: lastResult?.result === 'PASS',
+    ledOn: lastResult?.result === 'PASS',
+    truthTable: [
+      { a: 0, b: 0, out: 0, expected: 0 },
+      { a: 0, b: 1, out: 0, expected: 0 },
+      { a: 1, b: 0, out: 0, expected: 0 },
+      { a: 1, b: 1, out: lastResult?.result === 'PASS' ? 1 : 0, expected: 1 },
+    ],
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* 1. StepHeader */}
@@ -95,6 +126,18 @@ export function CoachScreen() {
         stepIndex={stepIndex}
         total={totalSteps}
         instruction={instruction}
+      />
+
+      {/* F.1 Safety Banner */}
+      <SafetyBanner
+        visible={lastResult?.reason === 'safety_violation'}
+        message={lastResult?.hint || 'Direct short circuit detected! Disconnect power immediately.'}
+      />
+
+      {/* F.2 DebugCoach Banner */}
+      <DebugCoachBanner
+        message={debugMessage}
+        onDismiss={() => setDebugMessage(null)}
       />
 
       {/* 2. Camera Preview Area with Sibling Overlay */}
@@ -154,6 +197,12 @@ export function CoachScreen() {
         </View>
       </View>
 
+      {/* F.4 Arduino Ground Truth Panel (when caps.arduino is true) */}
+      <ArduinoPanel
+        groundTruth={demoGroundTruth}
+        procedureId={procedure?.procedureId}
+      />
+
       {/* 3. Bottom Controls Area (B.3) */}
       <View style={styles.bottomControls}>
         {/* Verdict Pill */}
@@ -199,6 +248,7 @@ export function CoachScreen() {
       <HintSheet
         visible={hintSheetVisible}
         template={currentHintText}
+        llmText={llmExplanation}
         onClose={() => setHintSheetVisible(false)}
       />
     </SafeAreaView>

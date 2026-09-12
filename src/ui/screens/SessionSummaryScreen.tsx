@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { useStore } from '../../session/store';
+import { exportSession } from '../../session/export';
 
 export function SessionSummaryScreen() {
   const router = useRouter();
@@ -78,8 +79,9 @@ export function SessionSummaryScreen() {
 
   const handleShare = async () => {
     try {
+      const exportUri = await exportSession(procedure, events);
       await Share.share({
-        message: `SkillForge Lab: Completed "${procedure?.title || 'Circuit'}" with ${stats.stepsPassed} steps verified in ${stats.durationSeconds}s!`,
+        message: `SkillForge Lab: Completed "${procedure?.title || 'Circuit'}" with ${stats.stepsPassed}/${stats.totalSteps} steps verified in ${stats.durationSeconds}s! Session saved: ${exportUri}`,
       });
     } catch {
       // ignore

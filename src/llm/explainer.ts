@@ -2,8 +2,33 @@ import { EvaluationResult } from '../contract/types';
 import { caps } from '../capabilities';
 
 /**
- * On-device LLM Explainer (Part 14 / Step F.3).
- * Runs asynchronously off the critical path (fire-and-forget).
+ * Ollama Host Configuration.
+ * Note: When running on a physical phone, replace with your laptop's Wi-Fi IP address.
+ * (e.g. "http://10.69.98.242:11434")
+ */
+const OLLAMA_HOST = 'http://10.69.98.242:11434';
+const OLLAMA_MODEL = 'qwen2.5:3b'; // or "qwen2-vl:2b"
+
+/**
+ * Fallback domain explanations (Master Plan Part 14 / Rule D9).
+ * Used when Ollama is unreachable, in Red Light mode, or timing out.
+ */
+function getFallbackExplanation(reason?: string | null, instruction?: string): string {
+  if (reason === 'wrong_position') {
+    return 'In breadboards, holes in each row are connected horizontally. Move your lead into the instructed row to complete the intended electrical node.';
+  }
+  if (reason === 'reversed') {
+    return 'LEDs are directional diodes that only conduct when forward-biased. The longer lead (anode) must face the positive potential (+5V side).';
+  }
+  if (reason === 'safety_violation') {
+    return 'Connecting power directly to ground creates a zero-resistance short circuit that draws unsafe current. Disconnect immediately.';
+  }
+  return `Verify your connection matches: "${instruction}". Align component leads carefully with the breadboard row indices.`;
+}
+
+/**
+ * On-device / Local LLM Explainer (Part 14 / Step F.3).
+ * Connects to Ollama REST API asynchronously (fire-and-forget).
  * Never blocks requestTest() or the UI thread.
  */
 export async function explain(
@@ -14,20 +39,46 @@ export async function explain(
     return null;
   }
 
-  // Simulate local model inference latency (offline XNNPACK CPU)
-  await new Promise((resolve) => setTimeout(resolve, 850));
+  // 1. Build concise micro-prompt (Master Plan Part 14.1)
+  const prompt = `You are SkillForge circuit tutor.
+Current step: "${instruction}"
+Detected issue: ${result.reason || 'component misplaced'}
+In ONE short encouraging sentence (under 25 words), give a clear hint to fix it. Do not invent parts.`;
 
-  if (result.reason === 'wrong_position') {
-    return `In electronic prototyping, breadboard rows are connected horizontally in 5-hole strips. Moving your lead into row E5 connects it directly to the 5V rail node, completing the intended branch.`;
+  // 2. Attempt to query local Ollama server with 3-second timeout
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second fail-safe timeout
+
+    const response = await fetch(`${OLLAMA_HOST}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt: prompt,
+        stream: false,
+        options: {
+          temperature: 0.2,
+          num_predict: 40, // Cap at 40 tokens for fast response
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.response && data.response.trim().length > 0) {
+        return data.response.trim();
+      }
+    }
+  } catch (err) {
+    // Graceful silent degradation if Ollama is not running or unreachable
   }
 
-  if (result.reason === 'reversed') {
-    return `LEDs are semiconductor diodes that only conduct in forward-bias. The longer lead is the anode and must connect to the higher potential (+5V side) for current to flow.`;
-  }
-
-  if (result.reason === 'safety_violation') {
-    return `Bridging the power rail directly to ground creates an infinite current demand and zero-ohm path, which can damage power components or overheat the breadboard.`;
-  }
-
-  return `Ensure your connection matches step "${instruction}". Align the component pins carefully with the breadboard row indices.`;
+  // 3. Guaranteed instant fallback if Ollama is offline or times out (Rule D9)
+  return getFallbackExplanation(result.reason, instruction);
 }

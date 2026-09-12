@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { SimId, encodeRNToWeb, decodeWebToRN } from '../../sim/simProtocol';
 import { HEX_DATA } from '../../../assets/sim/hexData';
+import { SIMULATOR_HTML } from '../../../assets/sim/simHtml';
 
 export interface SimulatorViewProps {
   simId?: SimId | string;
@@ -215,11 +216,15 @@ export function SimulatorView({
       <View style={styles.graphicContainer}>
         <WebRenderer
           ref={webviewRef}
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
-          source={require('../../../assets/sim/index.html')}
+          source={{ html: SIMULATOR_HTML, baseUrl: '' }}
           onMessage={handleMessage}
           originWhitelist={['*']}
           javaScriptEnabled
+          domStorageEnabled
+          allowFileAccess
+          allowFileAccessFromFileURLs
+          allowUniversalAccessFromFileURLs
+          mixedContentMode="always"
           style={styles.webview}
         />
       </View>

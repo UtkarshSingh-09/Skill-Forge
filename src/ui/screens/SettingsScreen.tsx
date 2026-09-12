@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: theme.color.pass,
-    fontSize: theme.font.small,
+    fontSize: theme.font.label,
   },
   doneBtn: {
     backgroundColor: theme.color.accent,
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: theme.color.textDim,
-    fontSize: theme.font.small,
+    fontSize: theme.font.label,
   },
   footerSubtext: {
     color: '#4B5563',

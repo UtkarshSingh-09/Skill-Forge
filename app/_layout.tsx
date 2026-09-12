@@ -5,15 +5,19 @@ export default function RootLayout() {
   return (
     <Stack
       screenOptions={{
+        headerShown: false,
         headerStyle: { backgroundColor: theme.color.surface },
         headerTintColor: theme.color.text,
         contentStyle: { backgroundColor: theme.color.bg },
       }}
     >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="analyse" options={{ headerShown: false }} />
+      <Stack.Screen name="learn" options={{ headerShown: false }} />
       <Stack.Screen
         name="summary"
         options={{
+          headerShown: true,
           presentation: 'modal',
           title: 'Session Summary',
         }}
@@ -21,6 +25,7 @@ export default function RootLayout() {
       <Stack.Screen
         name="settings"
         options={{
+          headerShown: true,
           presentation: 'modal',
           title: 'Settings',
         }}

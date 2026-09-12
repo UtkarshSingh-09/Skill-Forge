@@ -14,6 +14,25 @@ import { createLearningNodeFromEvents } from '../engine/learningGraph';
 import { updateLearningGraph, getLearningHistory } from './skillProfile';
 import { caps } from '../capabilities';
 
+export interface SensorState {
+  camera: boolean;
+  mic: boolean;
+}
+
+export interface InteractionState {
+  question: string;
+  active: boolean;
+  status?: string;
+}
+
+export interface ExperimentRun {
+  id: string;
+  name: string;
+  simId: string;
+  verdict: 'PASS' | 'FAIL' | 'UNCERTAIN';
+  timestamp: number;
+}
+
 export interface AppState {
   procedure: Procedure | null;
   stepIndex: number;
@@ -23,6 +42,9 @@ export interface AppState {
   events: SessionEvent[];
   busy: boolean;
   selectedFixture: MockFixtureKey;
+  sensors: SensorState;
+  interaction: InteractionState | null;
+  experiments: ExperimentRun[];
 
   actions: {
     requestTest: () => Promise<void>;   // the ONE entry point for verification
@@ -32,6 +54,9 @@ export interface AppState {
     setProcedure: (procedure: Procedure) => void;
     selectFixture: (key: MockFixtureKey) => void;
     resetSession: () => void;
+    setSensor: (sensor: keyof SensorState, active: boolean) => void;
+    setInteraction: (interaction: InteractionState | null) => void;
+    addExperiment: (exp: Omit<ExperimentRun, 'id' | 'timestamp'>) => void;
   };
 }
 
@@ -54,6 +79,27 @@ export const useStore = create<AppState>((set, get) => ({
   ],
   busy: false,
   selectedFixture: 'live', // Default to 'live' dynamic hardware
+  sensors: {
+    camera: true,
+    mic: false,
+  },
+  interaction: {
+    question: 'Is this an LED blinking project?',
+    active: false,
+    status: 'idle',
+  },
+  experiments: [
+    { id: 'exp_01', name: 'Standard LED Blink (Pin 13)', simId: 'sim1_led_blink', verdict: 'PASS', timestamp: Date.now() - 3600000 * 24 },
+    { id: 'exp_02', name: 'Reversed LED Polarity Fault', simId: 'sim1_led_blink', verdict: 'FAIL', timestamp: Date.now() - 3600000 * 22 },
+    { id: 'exp_03', name: 'Missing 1kΩ Resistor Check', simId: 'sim1_led_blink', verdict: 'FAIL', timestamp: Date.now() - 3600000 * 18 },
+    { id: 'exp_04', name: 'Standard LED Blink (Corrected)', simId: 'sim1_led_blink', verdict: 'PASS', timestamp: Date.now() - 3600000 * 16 },
+    { id: 'exp_05', name: 'Dual LED Alternate Toggle', simId: 'sim2_alternate_blink', verdict: 'PASS', timestamp: Date.now() - 3600000 * 12 },
+    { id: 'exp_06', name: 'Dual LED Cross-Rail Short', simId: 'sim2_alternate_blink', verdict: 'FAIL', timestamp: Date.now() - 3600000 * 10 },
+    { id: 'exp_07', name: '2-Bit Binary Counter Run', simId: 'sim3_binary_count', verdict: 'PASS', timestamp: Date.now() - 3600000 * 8 },
+    { id: 'exp_08', name: 'SOS Morse Beacon Signal', simId: 'sim4_morse', verdict: 'PASS', timestamp: Date.now() - 3600000 * 4 },
+    { id: 'exp_09', name: 'Floating Ground Lead Check', simId: 'sim4_morse', verdict: 'UNCERTAIN', timestamp: Date.now() - 3600000 * 2 },
+    { id: 'exp_10', name: 'Full Circuit Live Continuity', simId: 'sim1_led_blink', verdict: 'PASS', timestamp: Date.now() - 1800000 },
+  ],
 
   actions: {
     requestTest: async () => {
@@ -126,12 +172,11 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (isPhysicalPass) {
           result.result = 'PASS';
-          result.feedback = `Hardware Sense: Closed circuit verified! Current detected (analog: ${hardwareData.raw}).`;
+          result.hint = `Hardware Sense: Closed circuit verified! Current detected (analog: ${hardwareData.raw}).`;
         } else {
           result.result = 'FAIL';
           result.reason = 'wrong_position';
-          result.feedback = `Hardware Sense: Open or reversed circuit (analog: ${hardwareData.raw}). Check resistor bridging E10-E14 and LED anode (+) at E14, cathode (-) at E18.`;
-          result.hint = result.feedback;
+          result.hint = `Hardware Sense: Open or reversed circuit (analog: ${hardwareData.raw}). Check resistor bridging E10-E14 and LED anode (+) at E14, cathode (-) at E18.`;
         }
       } else {
         // SIMULATION MODE: Fall back to selected fixture
@@ -283,5 +328,30 @@ export const useStore = create<AppState>((set, get) => ({
         ],
       });
     },
+
+    setSensor: (sensor: keyof SensorState, active: boolean) => {
+      set((state) => ({
+        sensors: {
+          ...state.sensors,
+          [sensor]: active,
+        },
+      }));
+    },
+
+    setInteraction: (interaction: InteractionState | null) => {
+      set({ interaction });
+    },
+
+    addExperiment: (exp: Omit<ExperimentRun, 'id' | 'timestamp'>) => {
+      const newEntry: ExperimentRun = {
+        ...exp,
+        id: `exp_${Date.now()}`,
+        timestamp: Date.now(),
+      };
+      set((state) => ({
+        experiments: [newEntry, ...state.experiments],
+      }));
+    },
   },
 }));
+

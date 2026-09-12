@@ -74,8 +74,8 @@ export function ProcedureSelectScreen() {
             const isIntermediate = procId.includes('AND') || procId.includes('gate');
 
             let badgeLabel = 'PRIMARY LAB (P-A v2)';
-            let badgeStyle = styles.badgeBeginner;
-            let badgeTextStyle = styles.badgeTextBeginner;
+            let badgeStyle: any = styles.badgeBeginner;
+            let badgeTextStyle: any = styles.badgeTextBeginner;
 
             if (isV2) {
               badgeLabel = 'PROGRESSION (Level 2)';
@@ -99,7 +99,7 @@ export function ProcedureSelectScreen() {
                 <View style={styles.cardHeader}>
                   <View style={styles.tagRow}>
                     <View style={[styles.badge, badgeStyle]}>
-                      <Text style={[styles.badgeText, badgeTextStyle]}>
+                      <Text style={badgeTextStyle}>
                         {badgeLabel}
                       </Text>
                     </View>

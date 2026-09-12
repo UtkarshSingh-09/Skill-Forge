@@ -15,7 +15,7 @@ export function evaluatePlaceholder(
       result: 'UNCERTAIN',
       reason: 'board_not_found',
       hint: step.hints.board_not_found || 'Align the board in view',
-      confidence: obs.overallConfidence,
+      confidence: obs.overallConfidence ?? 0,
       safetyViolations: [],
       highlightCells: [],
     };
@@ -27,7 +27,7 @@ export function evaluatePlaceholder(
       result: 'UNCERTAIN',
       reason: 'occluded',
       hint: step.hints.occluded || 'Move your hands, then TEST',
-      confidence: obs.overallConfidence,
+      confidence: obs.overallConfidence ?? 0,
       safetyViolations: [],
       highlightCells: [],
     };
@@ -39,7 +39,7 @@ export function evaluatePlaceholder(
       result: 'UNCERTAIN',
       reason: 'unstable',
       hint: 'Hold steady',
-      confidence: obs.overallConfidence,
+      confidence: obs.overallConfidence ?? 0,
       safetyViolations: [],
       highlightCells: [],
     };

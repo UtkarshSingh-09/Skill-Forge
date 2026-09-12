@@ -14,7 +14,8 @@ export function usePerception(onState?: (obs: ObservationState) => void) {
 
   useEffect(() => {
     // Emit the active observation state whenever fixture changes or on mount
-    const obs = MOCK[selectedFixture];
+    const key = selectedFixture === 'live' ? 'correct' : selectedFixture;
+    const obs = MOCK[key];
     if (obs && obs !== lastEmittedRef.current) {
       lastEmittedRef.current = obs;
       if (onState) {
@@ -25,7 +26,8 @@ export function usePerception(onState?: (obs: ObservationState) => void) {
 
   return {
     getCurrentObservation: (): ObservationState => {
-      return MOCK[selectedFixture] || MOCK.correct;
+      const key = selectedFixture === 'live' ? 'correct' : selectedFixture;
+      return MOCK[key] || MOCK.correct;
     },
   };
 }

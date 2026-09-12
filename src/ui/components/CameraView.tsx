@@ -23,12 +23,14 @@ interface CameraViewProps {
   frameProcessor?: any;
   onLayout?: (e: LayoutChangeEvent) => void;
   fixtureMode?: boolean;
+  showModeToggle?: boolean;
 }
 
 export function CameraView({
   isActive = true,
   onLayout,
   fixtureMode: initialFixtureMode = false,
+  showModeToggle = false,
 }: CameraViewProps) {
   const pathname = usePathname();
   const isFocused = pathname === '/coach' || pathname.includes('coach');
@@ -114,13 +116,15 @@ export function CameraView({
       )}
 
       {/* Mode Switcher Pill */}
-      <Pressable
-        style={styles.modeTogglePill}
-        onPress={() => setShowVirtualBoard(true)}
-      >
-        <View style={styles.liveDot} />
-        <Text style={styles.modeToggleText}>LIVE CAMERA (Tap for Virtual)</Text>
-      </Pressable>
+      {showModeToggle && (
+        <Pressable
+          style={styles.modeTogglePill}
+          onPress={() => setShowVirtualBoard(true)}
+        >
+          <View style={styles.liveDot} />
+          <Text style={styles.modeToggleText}>LIVE CAMERA (Tap for Virtual)</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

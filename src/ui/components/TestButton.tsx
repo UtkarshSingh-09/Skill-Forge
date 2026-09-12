@@ -7,9 +7,10 @@ interface TestButtonProps {
   onPress: () => void;
   busy: boolean;
   disabled?: boolean;
+  size?: number;
 }
 
-export function TestButton({ onPress, busy, disabled = false }: TestButtonProps) {
+export function TestButton({ onPress, busy, disabled = false, size = 54 }: TestButtonProps) {
   const handlePress = async () => {
     if (busy || disabled) return;
     try {
@@ -29,6 +30,13 @@ export function TestButton({ onPress, busy, disabled = false }: TestButtonProps)
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.button,
+        {
+          minWidth: size,
+          minHeight: size,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+        },
         isDisabled && styles.disabled,
         pressed && !isDisabled && styles.pressed,
       ]}
@@ -36,9 +44,9 @@ export function TestButton({ onPress, busy, disabled = false }: TestButtonProps)
       accessibilityLabel="Test circuit step"
     >
       {busy ? (
-        <ActivityIndicator color={theme.color.bg} size="small" />
+        <ActivityIndicator color="#0A0C10" size="small" />
       ) : (
-        <Text style={styles.text}>TEST</Text>
+        <Text style={[styles.text, { fontSize: size < 60 ? 12 : 16 }]}>TEST</Text>
       )}
     </Pressable>
   );
@@ -51,26 +59,26 @@ const styles = StyleSheet.create({
     width: theme.hit.testButton,
     height: theme.hit.testButton,
     borderRadius: theme.hit.testButton / 2,
-    backgroundColor: theme.color.accent,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: theme.color.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   disabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   pressed: {
     transform: [{ scale: 0.94 }],
-    opacity: 0.9,
+    opacity: 0.85,
   },
   text: {
-    color: theme.color.bg,
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    color: '#0A0C10',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
 });

@@ -1,0 +1,30 @@
+{
+  "timestampMs": 1726113600000,
+  "boardDetected": true,
+  "sceneStable": true,
+  "handsClear": true,
+  "overallConfidence": 0.98,
+  "occupancy": {
+    "+rail_5": "resistor_220",
+    "E5": "resistor_220"
+  },
+  "components": [
+    {
+      "id": "R1",
+      "type": "resistor",
+      "cells": ["+rail_5", "E5"],
+      "colour": "brown-black-brown",
+      "orientation": "n/a",
+      "confidence": 0.98
+    }
+  ],
+  "connections": [
+    {
+      "from": "+rail_5",
+      "to": "E5",
+      "expectedColour": null,
+      "present": true,
+      "confidence": 0.98
+    }
+  ]
+}

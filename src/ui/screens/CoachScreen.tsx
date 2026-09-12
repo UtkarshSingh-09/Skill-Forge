@@ -1,102 +1,58 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { theme } from '../theme';
 import { StepHeader } from '../components/StepHeader';
 import { VerdictPill } from '../components/VerdictPill';
 import { TestButton } from '../components/TestButton';
-import { EvaluationResult, Verdict, FailReason } from '../../contract/types';
+import { useStore } from '../../session/store';
+import { MockFixtureKey } from '../dev/MockPerception';
 
 export function CoachScreen() {
-  // Test states for D.1 verification
-  const [busy, setBusy] = useState(false);
-  const [currentResult, setCurrentResult] = useState<EvaluationResult | null>({
-    stepId: 1,
-    result: 'FAIL',
-    reason: 'wrong_position',
-    hint: 'Wrong hole — move to E5',
-    confidence: 0.95,
-    safetyViolations: [],
-    highlightCells: ['E5', 'E7'],
-  });
+  const router = useRouter();
 
-  const testStates: Array<{
-    label: string;
-    result: EvaluationResult;
-  }> = [
-    {
-      label: 'PASS',
-      result: {
-        stepId: 1,
-        result: 'PASS',
-        reason: null,
-        hint: 'Correct — next step',
-        confidence: 0.98,
-        safetyViolations: [],
-        highlightCells: ['E5'],
-      },
-    },
-    {
-      label: 'FAIL (pos)',
-      result: {
-        stepId: 1,
-        result: 'FAIL',
-        reason: 'wrong_position',
-        hint: 'Wrong hole — move to E5',
-        confidence: 0.92,
-        safetyViolations: [],
-        highlightCells: ['E5'],
-      },
-    },
-    {
-      label: 'SAFETY',
-      result: {
-        stepId: 1,
-        result: 'FAIL',
-        reason: 'safety_violation',
-        hint: 'Short circuit risk! Power rail bridged directly to ground.',
-        confidence: 0.99,
-        safetyViolations: ['Power rail bridged directly to ground.'],
-        highlightCells: ['+rail_5', '-rail_5'],
-      },
-    },
-    {
-      label: 'UNCERTAIN',
-      result: {
-        stepId: 1,
-        result: 'UNCERTAIN',
-        reason: 'occluded',
-        hint: 'Move your hands, then TEST',
-        confidence: 0.4,
-        safetyViolations: [],
-        highlightCells: [],
-      },
-    },
-    {
-      label: 'CHECKING',
-      result: {
-        stepId: 1,
-        result: 'CHECKING',
-        reason: null,
-        hint: null,
-        confidence: 0,
-        safetyViolations: [],
-        highlightCells: [],
-      },
-    },
+  // Read all state directly from the Zustand store
+  const procedure = useStore((s) => s.procedure);
+  const stepIndex = useStore((s) => s.stepIndex);
+  const lastResult = useStore((s) => s.lastResult);
+  const busy = useStore((s) => s.busy);
+  const selectedFixture = useStore((s) => s.selectedFixture);
+  const events = useStore((s) => s.events);
+
+  const { requestTest, selectFixture, resetSession } = useStore((s) => s.actions);
+
+  const totalSteps = procedure?.steps.length ?? 4;
+  const currentStep = procedure?.steps[stepIndex];
+  const instruction = currentStep?.instruction ?? 'Place the resistor from +5V to E5';
+
+  // Navigate to summary when the last step passes
+  useEffect(() => {
+    if (stepIndex === totalSteps - 1 && lastResult?.result === 'PASS') {
+      const timer = setTimeout(() => {
+        router.push('/summary');
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [stepIndex, totalSteps, lastResult, router]);
+
+  const fixtureOptions: Array<{ key: MockFixtureKey; label: string }> = [
+    { key: 'wrong', label: 'Wrong (FAIL)' },
+    { key: 'correct', label: 'Correct (PASS)' },
+    { key: 'occ', label: 'Occluded (UNCERTAIN)' },
   ];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* 1. StepHeader */}
+      {/* 1. StepHeader with progress dots and gear button */}
       <StepHeader
-        stepIndex={1}
-        total={4}
-        instruction="Place the resistor from +5V to E5"
+        stepIndex={stepIndex}
+        total={totalSteps}
+        instruction={instruction}
       />
 
-      {/* 2. Camera Preview Area (CameraView / BoardOverlay slot) */}
+      {/* 2. Camera Preview Area */}
       <View style={styles.cameraArea}>
         <View style={styles.cameraPlaceholder}>
           <Ionicons name="camera-outline" size={48} color={theme.color.textDim} />
@@ -104,39 +60,43 @@ export function CoachScreen() {
           <Text style={styles.cameraSubtext}>Fixture Mode Active</Text>
         </View>
 
-        {/* D.1 Test state switcher bar */}
+        {/* Dev Fixture Switcher (Part C & D.2) */}
         <View style={styles.devBar}>
-          <Text style={styles.devBarTitle}>D.1 Test Presets:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            {testStates.map((item) => (
+          <View style={styles.devBarHeader}>
+            <Text style={styles.devBarTitle}>Dev Fixture: {selectedFixture.toUpperCase()}</Text>
+            <Pressable onPress={resetSession} style={styles.resetBtn}>
+              <Text style={styles.resetBtnText}>Restart</Text>
+            </Pressable>
+          </View>
+          <View style={styles.chipRow}>
+            {fixtureOptions.map((opt) => (
               <Pressable
-                key={item.label}
-                onPress={() => setCurrentResult(item.result)}
+                key={opt.key}
+                onPress={() => selectFixture(opt.key)}
                 style={[
                   styles.chip,
-                  currentResult?.reason === item.result.reason &&
-                    currentResult?.result === item.result.result &&
-                    styles.chipActive,
+                  selectedFixture === opt.key && styles.chipActive,
                 ]}
               >
-                <Text style={styles.chipText}>{item.label}</Text>
+                <Text
+                  style={[
+                    styles.chipText,
+                    selectedFixture === opt.key && styles.chipTextActive,
+                  ]}
+                >
+                  {opt.label}
+                </Text>
               </Pressable>
             ))}
-            <Pressable
-              onPress={() => setBusy(!busy)}
-              style={[styles.chip, busy && styles.chipBusyActive]}
-            >
-              <Text style={styles.chipText}>{busy ? 'Busy: ON' : 'Busy: OFF'}</Text>
-            </Pressable>
-          </ScrollView>
+          </View>
         </View>
       </View>
 
-      {/* 3. Bottom Controls Area */}
+      {/* 3. Bottom Controls Area (B.3) */}
       <View style={styles.bottomControls}>
         {/* Verdict Pill */}
         <View style={styles.pillContainer}>
-          <VerdictPill evaluation={currentResult} />
+          <VerdictPill evaluation={lastResult} />
         </View>
 
         {/* Action Row: Speak, TestButton, Hint */}
@@ -151,11 +111,7 @@ export function CoachScreen() {
           </Pressable>
 
           <TestButton
-            onPress={() => {
-              // Stub test action for D.1
-              setBusy(true);
-              setTimeout(() => setBusy(false), 800);
-            }}
+            onPress={requestTest}
             busy={busy}
           />
 
@@ -168,6 +124,11 @@ export function CoachScreen() {
             <Ionicons name="help-outline" size={24} color={theme.color.text} />
           </Pressable>
         </View>
+
+        {/* Event log counter */}
+        <Text style={styles.eventCounter}>
+          Events logged: {events.length} · Step: {stepIndex + 1}/{totalSteps}
+        </Text>
       </View>
     </SafeAreaView>
   );
@@ -203,50 +164,68 @@ const styles = StyleSheet.create({
   devBar: {
     position: 'absolute',
     top: theme.space.sm,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(26, 31, 39, 0.85)',
-    paddingVertical: theme.space.xs,
-    paddingHorizontal: theme.space.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2D3748',
+    left: theme.space.md,
+    right: theme.space.md,
+    backgroundColor: 'rgba(26, 31, 39, 0.92)',
+    padding: theme.space.sm,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: '#2D3748',
+  },
+  devBarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   devBarTitle: {
     color: theme.color.accent,
     fontSize: 11,
     fontWeight: '700',
-    marginBottom: 4,
     textTransform: 'uppercase',
   },
+  resetBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: '#374151',
+    borderRadius: 4,
+  },
+  resetBtnText: {
+    color: theme.color.text,
+    fontSize: 10,
+    fontWeight: '600',
+  },
   chipRow: {
-    gap: 6,
     flexDirection: 'row',
+    gap: 6,
   },
   chip: {
+    flex: 1,
     backgroundColor: '#252C37',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: theme.radius.sm,
+    alignItems: 'center',
   },
   chipActive: {
     backgroundColor: theme.color.accent,
   },
-  chipBusyActive: {
-    backgroundColor: theme.color.safety,
-  },
   chipText: {
-    color: theme.color.text,
+    color: theme.color.textDim,
     fontSize: 11,
     fontWeight: '600',
+  },
+  chipTextActive: {
+    color: theme.color.bg,
+    fontWeight: '700',
   },
   bottomControls: {
     backgroundColor: theme.color.surface,
     paddingHorizontal: theme.space.lg,
     paddingTop: theme.space.sm,
-    paddingBottom: theme.space.lg,
+    paddingBottom: theme.space.md,
     borderTopLeftRadius: theme.radius.lg,
     borderTopRightRadius: theme.radius.lg,
-    gap: theme.space.md,
+    gap: theme.space.sm,
   },
   pillContainer: {
     alignItems: 'center',
@@ -265,5 +244,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#252C37',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  eventCounter: {
+    color: theme.color.textDim,
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 2,
   },
 });

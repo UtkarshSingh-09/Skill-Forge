@@ -1,0 +1,10 @@
+{
+  "timestampMs": 1726113602000,
+  "boardDetected": true,
+  "sceneStable": true,
+  "handsClear": false,
+  "overallConfidence": 0.35,
+  "occupancy": {},
+  "components": [],
+  "connections": []
+}

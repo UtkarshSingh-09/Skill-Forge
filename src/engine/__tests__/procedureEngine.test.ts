@@ -177,4 +177,14 @@ describe('ProcedureEngine — 10 Golden Acceptance Tests (Part 11.1)', () => {
     const f3 = debouncedEngine.evaluate(validObs);
     assert.strictEqual(f3.result, 'PASS');
   });
+
+  // 11. Multi-step progression with full circuit fixture
+  it('11. all steps in procedure evaluate to PASS with obs_correct fixture', () => {
+    const fullObs = require('../../contract/fixtures/obs_correct.json');
+    for (let i = 0; i < procedure.steps.length; i++) {
+      const stepEngine = new ProcedureEngine(procedure, i);
+      const res = stepEngine.evaluate(fullObs);
+      assert.strictEqual(res.result, 'PASS', `Step ${i + 1} (${procedure.steps[i].expect.type}) failed: ${res.reason}`);
+    }
+  });
 });

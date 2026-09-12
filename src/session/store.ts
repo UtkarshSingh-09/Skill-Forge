@@ -6,7 +6,7 @@ import {
   SessionEvent,
 } from '../contract/types';
 import defaultProcedure from '../contract/procedures/led_procedure.json';
-import { MOCK, MockFixtureKey } from '../ui/dev/MockPerception';
+import { MOCK, MockFixtureKey, getMockObservation } from '../ui/dev/MockPerception';
 import { ProcedureEngine } from '../engine/procedureEngine';
 import { persistEvent } from './events';
 
@@ -62,7 +62,7 @@ export const useStore = create<AppState>((set, get) => ({
       });
 
       // 2. Read selected mock fixture as lastObservation
-      const obs = MOCK[state.selectedFixture];
+      const obs = getMockObservation(state.selectedFixture, state.procedure, state.stepIndex);
       const currentProcedure = state.procedure;
       const currentStep = currentProcedure?.steps[state.stepIndex];
 

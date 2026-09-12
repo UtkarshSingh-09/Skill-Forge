@@ -110,7 +110,14 @@ export class ProcedureEngine {
       .filter((c) => c.type === step.expect.type && c.confidence >= CONF_THRESHOLD)
       .sort((a, b) => b.confidence - a.confidence);
 
-    const comp = candidates[0];
+    const wantCells = step.expect.cells ?? [];
+
+    // Find candidate matching the expected cells, or fallback to best candidate of matching type
+    const matchingCandidate = wantCells.length > 0
+      ? candidates.find((c) => wantCells.every((cell) => c.cells.includes(cell)))
+      : candidates[0];
+
+    const comp = matchingCandidate || candidates[0];
 
     // Check for missing component
     if (!comp) {
@@ -124,7 +131,6 @@ export class ProcedureEngine {
     }
 
     // Check cells placement
-    const wantCells = step.expect.cells ?? [];
     if (wantCells.length > 0) {
       const allCellsOccupied = wantCells.every((cell) => comp.cells.includes(cell));
       if (!allCellsOccupied) {

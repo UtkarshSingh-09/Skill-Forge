@@ -4,7 +4,6 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
-    "@react-native-voice/voice": "^3.2.4",
     "@shopify/react-native-skia": "^2.6.2",
     "@wokwi/elements": "^1.9.2",
     "avr8js": "^0.21.1",
